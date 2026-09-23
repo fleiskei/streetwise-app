@@ -11,22 +11,24 @@ Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe** · Anforderungen: 
  │ React     │──┼──▶├─ /data/aachen/*.json   Straßen, Levels, Namensliste    │
  │ MapLibre  │  │   └─ /tiles/aachen/{z}/{x}/{y}.mvt  label-freie Vektor-Tiles│
  │ IndexedDB │  │                                                             │
- │ SW-Cache  │──┼──▶ Worker (Hono) /api/*  ──▶  D1 (SQLite)                   │
- └───────────┘  │                         └──▶ Resend (Magic-Link-Mails)      │
+ │ SW-Cache  │──┼──▶ Pages Functions (Hono) /api/*  ──▶  D1 (SQLite)         │
+ └───────────┘  │   ▲ geschützt durch Cloudflare Access (One-time PIN)       │
+                │   URL vorerst: https://maptrain.pages.dev                   │
                 └─────────────────────────────────────────────────────────────┘
         Build-Zeit (GitHub Actions / lokal): OSM → Pipeline → GeoJSON + Tiles
 ```
 
 - **Daten und Tiles sind statisch.** Sie entstehen einmal in der Pipeline und werden mit der App ausgeliefert.
   Zur Laufzeit gibt es keine Abhängigkeit von Overpass oder fremden Tile-Servern. Deshalb geht Offline gut, und es fallen keine Kosten an.
-- **Der Worker macht nur Auth und Fortschritt.** Die Spiellogik läuft komplett im Client, damit sie offline funktioniert.
+- **Die Functions machen nur Identität und Fortschritt.** Die Anmeldung selbst übernimmt Cloudflare Access.
+  App und API laufen auf **derselben Origin**, dadurch gibt es keine CORS- und keine Third-Party-Cookie-Probleme auf iOS. Die Spiellogik läuft komplett im Client, damit sie offline funktioniert.
 
 ## 2. Repo-Struktur (pnpm-Monorepo)
 
 ```
 apps/
   web/            Vite + React + TS + Tailwind, MapLibre GL, vite-plugin-pwa (Workbox)
-  api/            Cloudflare Worker (Hono), D1-Migrationen, wrangler.toml
+  web/functions/  Pages Functions (Hono) unter /api/*, D1-Migrationen in apps/web/migrations
 packages/
   core/           Framework-freie Logik: Normalisierung, Autocomplete, SR/Leitner,
                   Level-Freischaltung, Distraktor-Auswahl, Treffer-Distanz (mit Tests)
@@ -76,15 +78,15 @@ Aktualisieren geht mit `pnpm data:aachen`.
 - Treffer-Erkennung in M3: Abstand vom Tap zur Linie mit `@turf/point-to-line-distance`. Die Toleranz richtet sich nach dem Zoom
   (mindestens 25 m bzw. 22 px). Bei Plätzen zählt „Punkt im Polygon“ oder ein Abstand ≤ 15 m.
 
-## 5. Backend (`apps/api`)
+## 5. Backend (`apps/web/functions`)
 
-**Hono auf Workers, D1, Session-Cookie (HttpOnly, SameSite=Lax) und zusätzlich Bearer-Token für die PWA.**
+**Hono als Pages Functions, D1, Identität über Cloudflare Access.** Jeder Request an `/api/*` bringt `Cf-Access-Jwt-Assertion` mit.
+Der JWT wird gegen `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` geprüft (Audience-Tag als Env-Variable).
+Die E-Mail aus dem Token bestimmt den Nutzer. Eigene Sessions und Login-Codes gibt es damit nicht.
 
 ### Datenmodell (D1)
 ```sql
 users        (id TEXT PK, email TEXT UNIQUE, created_at, settings_json)
-login_codes  (email, code_hash, link_token_hash, expires_at, attempts)   -- 10 min gültig, max 5 Versuche
-sessions     (id TEXT PK, user_id, created_at, expires_at, user_agent)   -- 90 Tage, rollierend
 answers      (id TEXT PK /*Client-UUID*/, user_id, city, street_id, mode,
               correct INT, answered_at, response_ms)                      -- Ereignislog, idempotent
 progress     (user_id, city, street_id, box REAL, due_at, n_correct, n_wrong, last_at,
@@ -95,9 +97,8 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 ### API
 | Methode | Pfad | Zweck |
 |---|---|---|
-| POST | `/api/auth/request` | E-Mail → Code + Link verschicken (Rate-Limit pro E-Mail und IP) |
-| POST | `/api/auth/verify` | Code oder Link-Token → Session |
-| POST | `/api/auth/logout` | |
+| GET | `/api/auth/login` | Navigationsziel zum Anmelden: Access erzwingt den Login, danach Redirect zurück zur App |
+| GET | `/cdn-cgi/access/logout` | Abmelden (stellt Access bereit) |
 | GET | `/api/me` | Nutzer + Einstellungen |
 | GET | `/api/progress?city=aachen&since=` | Fortschritt (Delta-Sync) |
 | POST | `/api/answers` | Batch von Antworten (idempotent über Client-UUID) → aktualisierter Fortschritt |
@@ -126,14 +127,14 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 
 | # | Meilenstein | Ergebnis | Aufwand* |
 |---|---|---|---|
-| M0 | Grundgerüst | Monorepo, Lint/Format/Test, CI, leere App auf Pages und Worker auf Workers deployed | S |
+| M0 | Grundgerüst | Monorepo, Lint/Format/Test, CI, leere App + `/api/me` auf `maptrain.pages.dev`, Access auf `/api/*`, **Login-Test auf dem iPhone als PWA** | S |
 | M1 | Daten & Karte | Pipeline für Aachen, label-freie Tiles, eigener Style, Straßen-Layer sichtbar, Bezirkswahl | L |
 | M2 | Spielmodi | M1–M4 lokal spielbar inkl. Autocomplete, Rundenergebnis, Sound/Haptik | L |
 | M3 | Lernlogik | Leitner, Levels, Freischaltung, Sterne, „Wiederholen“, lokal persistiert | M |
-| M4 | Backend & Sync | D1-Schema, Magic Link + Code (Resend), Answers-Sync, Übernahme anonymer Daten | M |
+| M4 | Backend & Sync | D1-Schema, Access-JWT-Prüfung, Answers-Sync, Übernahme anonymer Daten | M |
 | M5 | PWA & Offline | Installierbar auf iOS, Offline-Download pro Bezirk, Offline-Queue | M |
 | M6 | Statistik & Politur | Dashboard, Fortschrittskarte, Animationen, A11y-Pass, E2E-Tests | M |
-| M7 | Go-Live | Custom Domain, Produktions-Deploy über GitHub Actions, Doku | S |
+| M7 | Go-Live | Produktions-Deploy über GitHub Actions, Doku (eigene Domain optional später) | S |
 
 \* S ≈ ½ Tag, M ≈ 1–2 Tage, L ≈ 2–4 Tage Implementierungsarbeit
 
@@ -142,14 +143,22 @@ bevor Backend und Offline dazukommen.
 
 ## 8. Tests & Qualität
 - Vitest für `packages/core` (Normalisierung, Autocomplete-Ranking, Leitner, Level-Freischaltung, Distraktoren, Treffer-Distanz)
-- Worker-Tests mit `@cloudflare/vitest-pool-workers` (Auth-Flow, idempotente Answers)
+- Functions-Tests mit `@cloudflare/vitest-pool-workers` (JWT-Prüfung, idempotente Answers)
 - Playwright-Smoke-Test: App lädt, Karte rendert, eine M1-Runde lässt sich durchspielen
-- GitHub Actions: lint → typecheck → test → build; Deploy auf `main`
+- GitHub Actions: lint → typecheck → test → build; Deploy auf `main` mit `wrangler pages deploy` (Direct Upload wie bei spltrainer),
+  Preview-Deploys für Branches. D1-Migrationen laufen im Workflow mit `wrangler d1 migrations apply --remote`.
 
-## 9. Offene Punkte (von dir zu klären)
-1. **Domain:** Resend braucht eine verifizierte Absender-Domain, und schöner ist sie auch als App-URL.
-   Hast du eine Domain (bei Cloudflare)? Sonst `*.pages.dev` für die App und vorerst eine Resend-Testdomain
-   (die nur an die eigene Adresse senden kann).
-2. **Cloudflare-Zugang für CI:** Für automatische Deploys brauchen wir `CLOUDFLARE_API_TOKEN` und `CLOUDFLARE_ACCOUNT_ID`
-   als GitHub-Secrets sowie `RESEND_API_KEY` als Worker-Secret. Die richtest du selbst ein, ich dokumentiere die Schritte.
-3. **Freigabe** dieses Plans bzw. Änderungswünsche. Danach beginne ich mit M0 + M1.
+## 9. Einrichtung durch dich (einmalig)
+Hosting und Login laufen wie bei spltrainer unter `*.pages.dev` mit Cloudflare Access. Eine eigene Domain ist vorerst nicht nötig.
+
+1. **Pages-Projekt** `maptrain` anlegen (Direct Upload, der Workflow deployt).
+2. **D1-Datenbank** `maptrain` anlegen und im Pages-Projekt als Binding `DB` eintragen.
+   Die IDs trage ich in `wrangler.toml` ein, sobald du sie mir nennst.
+3. **Zero Trust → Access → Applications → Self-hosted**: Domain `maptrain.pages.dev`, **Pfad `api`**, Policy „Allow“ für
+   deine E-Mail-Adresse(n), Identity „One-time PIN“, Session-Dauer z. B. 1 Monat. Das **Application Audience (AUD) Tag**
+   und den Team-Namen brauche ich als Env-Variablen.
+4. **GitHub-Secrets** `CLOUDFLARE_API_TOKEN` (Rechte: Pages Edit, D1 Edit) und `CLOUDFLARE_ACCOUNT_ID`.
+   Falls du bei spltrainer schon ein Token hast, kannst du es um die D1-Rechte erweitern.
+
+**Fallback**, falls der Access-Login in der iOS-PWA nicht funktioniert (siehe REQUIREMENTS 5.1): eigener Login mit
+6-stelligem Code, der direkt in der PWA eingegeben wird. Der Versand läuft über Resend. Dafür ist eine eigene Domain nötig.

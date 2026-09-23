@@ -13,13 +13,14 @@ ohne Beschriftung, und der Nutzer muss die Namen selbst zuordnen. Erste Stadt is
 | Gebiet | Aachen, getrennt nach **Stadtbezirken** wählbar (Mitte, Brand, Eilendorf, Haaren, Kornelimünster/Walheim, Laurensberg, Richterich) |
 | Inhalte | **Straßen und Plätze** mit Namen (OSM) |
 | Nutzer | Ich bzw. ein kleiner Kreis, keine öffentliche Bestenliste |
-| Login | **Magic Link per E-Mail**, zusätzlich ein 6-stelliger Code (siehe 5.1) |
+| Login | E-Mail-Einmalcode über **Cloudflare Access (One-time PIN)**, wie bei spltrainer; keine eigene Domain und kein Mail-Dienst nötig (siehe 5.1) |
 | Lernlogik | **Spaced Repetition + Level-System** (Levels sollen motivieren) |
 | Texteingabe | **Autocomplete** |
 | Karte | **Vektor-Tiles mit eigenem Stil** ohne Labels (MapLibre GL) |
 | Name → Straße | Treffer, wenn der Tap **im Umkreis** der Straßengeometrie liegt (~25 m, zoomabhängig) |
 | Offline | **Ja**, Download pro Bezirk; Antworten werden gesammelt und später synchronisiert |
-| Stack | Vite + React + TS + Tailwind, MapLibre, Cloudflare Pages + Workers (Hono) + D1, Resend |
+| Stack | Vite + React + TS + Tailwind, MapLibre, Cloudflare Pages + Pages Functions (Hono) + D1 |
+| Hosting/URL | Vorerst **`*.pages.dev`** (keine eigene Domain), Deploy per GitHub Actions wie bei spltrainer |
 | Extras | Statistik-Dashboard, Haptik & Sound, stadtunabhängige Architektur |
 
 ## 2. Funktionale Anforderungen
@@ -66,7 +67,7 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 - F-16 Level-Stern-Bewertung: ★ alle einmal richtig, ★★ 80 % gemeistert, ★★★ M4 fehlerfrei bestanden.
 
 ### 2.4 Konto & Fortschritt
-- F-17 Der Login läuft per Magic Link **und** 6-stelligem Code in derselben Mail (siehe 5.1).
+- F-17 Der Login läuft per E-Mail-Einmalcode über Cloudflare Access. Nur `/api/*` ist geschützt, die App selbst bleibt ohne Login nutzbar (siehe 5.1).
 - F-18 Fortschritt (Boxen, Levels, Antwort-Historie) wird auf dem Server gespeichert und zwischen Geräten synchronisiert.
 - F-19 Ohne Login kann man sofort spielen. Der lokale Fortschritt wird beim ersten Login übernommen.
 - F-20 Man kann sein Konto samt Daten löschen und die eigenen Daten als JSON exportieren.
@@ -87,9 +88,9 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
   Antworten landen offline in einer IndexedDB-Queue und werden bei Verbindung synchronisiert.
 - N-3 **Performance**: erste Anzeige < 2 s auf 4G, Karte flüssig mit 60 fps auf iPhone 12+,
   JS-Bundle < 300 kB gz ohne MapLibre.
-- N-4 **Hosting**: vollständig auf Cloudflare (Pages, Workers, D1, R2). Kosten im Free-Tier.
+- N-4 **Hosting**: vollständig auf Cloudflare (Pages + Functions, D1, Access). Vorerst unter `*.pages.dev`. Kosten im Free-Tier.
 - N-5 **Datenschutz**: gespeichert werden nur die E-Mail-Adresse und Lerndaten. Kein Tracking, keine Drittanbieter-Requests
-  außer Resend für den Mailversand. Tiles werden selbst gehostet.
+  (auch kein externer Mail-Dienst). Tiles werden selbst gehostet.
 - N-6 **Stadtunabhängig**: Stadt-spezifisches steckt nur in einer Konfiguration (Name, OSM-Relation, Bezirke) und in generierten Daten.
   Eine neue Stadt bedeutet: Config anlegen und die Pipeline laufen lassen.
 - N-7 **Sprache**: UI auf Deutsch, Texte über i18n-Datei (Englisch später möglich).
@@ -105,10 +106,22 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 
 ## 5. Fallstricke & Lösungen
 
-### 5.1 Magic Link auf iOS-PWA
-Eine installierte PWA auf iOS hat **eigene, von Safari getrennte Cookies und Speicher**. Ein Link aus der Mail
-öffnet sich aber in Safari, der Login käme also nicht in der PWA an. Deshalb enthält die Mail zusätzlich einen
-**6-stelligen Code**, den man in der PWA eintippt. Der Link funktioniert weiterhin für Desktop und Browser.
+### 5.1 Login über Cloudflare Access auf der iOS-PWA
+Wie bei spltrainer schützt **Cloudflare Access** (Zero Trust, kostenlos bis 50 Nutzer) die App, Login per
+**One-time PIN**. Cloudflare verschickt die Codes selbst, deshalb brauchen wir weder eine eigene Domain noch Resend.
+Unterschiede zu spltrainer:
+- Geschützt ist nur der Pfad **`/api/*`** und nicht die ganze Seite. Spielen geht damit ohne Login und offline (F-19).
+- „Anmelden“ ist eine normale Seitennavigation auf `/api/auth/login`. Access fragt E-Mail und Code ab und leitet danach zurück zur App.
+  Ab dann schickt jeder `fetch` an `/api/*` das `CF_Authorization`-Cookie mit.
+- Die Functions lesen die Identität aus dem signierten Header `Cf-Access-Jwt-Assertion`, prüfen ihn gegen die Access-Schlüssel
+  und legen den Nutzer anhand der E-Mail an.
+- Ist die Access-Session abgelaufen (Dauer einstellbar, z. B. 1 Monat), antwortet die API mit einem Redirect bzw. 401.
+  Die App sammelt die Antworten dann weiter offline und zeigt „Erneut anmelden“.
+
+**Risiko:** Eine iOS-PWA im Standalone-Modus öffnet fremde Domains (hier `<team>.cloudflareaccess.com`) unter Umständen
+in einem eingebetteten Browser mit eigenem Cookie-Speicher. Das Cookie käme dann nicht in der PWA an. Das prüfen wir **früh
+in M0 mit einem Test auf dem iPhone**. Falls es nicht geht, bauen wir einen eigenen Login mit Code-Eingabe direkt in der PWA
+(Resend + eigene Domain, siehe `docs/PLAN.md` Abschnitt 9).
 
 ### 5.2 Haptik auf iOS
 iOS Safari hat keine Vibration-API. Als Ersatz gibt es ein kurzes Wackeln bzw. Aufblitzen der Karte und Sound.
