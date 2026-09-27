@@ -84,3 +84,21 @@ export function hitTolerance(
   const metersPerPixel = (156543.03392 * Math.cos(latitude * RAD)) / 2 ** zoom / 2; // 512px tiles
   return Math.max(minMeters, minPixels * metersPerPixel);
 }
+
+/** Bounding box of a street geometry. */
+export function geometryBBox(g: StreetGeometry): [number, number, number, number] {
+  const pts: LonLat[] =
+    g.type === "LineString"
+      ? g.coordinates
+      : g.type === "MultiPolygon"
+        ? g.coordinates.flat(2)
+        : g.coordinates.flat();
+  let [w, s, e, n] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y] of pts) {
+    w = Math.min(w, x);
+    s = Math.min(s, y);
+    e = Math.max(e, x);
+    n = Math.max(n, y);
+  }
+  return [w, s, e, n];
+}

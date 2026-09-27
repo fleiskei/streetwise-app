@@ -1,6 +1,6 @@
 # Streetwise – Umsetzungsplan
 
-Stand: 2026-09-27 · Status: **freigegeben, M0/M1 fertig, weiter mit M2** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
+Stand: 2026-09-27 · Status: **freigegeben, M0–M2 fertig, weiter mit M3/M4** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## 1. Architektur
 
@@ -143,6 +143,12 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
   Login per Cloudflare Access funktioniert in der iOS-PWA (vom Home-Bildschirm gestartet) – kein Fallback nötig.
 - ✅ M1: Datenpipeline (1.515 Straßen/Plätze, 7 Bezirke, Levels wachsen vom Zentrum aus), label-freie Kacheln,
   Bezirke → Level-Pfad → Karte „Erkunden“ (Straße antippen zeigt den Namen).
+- ✅ M2: Level-Seite mit Moduswahl; Multiple Choice, Zuordnen (Tap-Tap, beide Richtungen), Antippen
+  (Toleranz zoomabhängig, Abstand bei Fehlern), Karte vervollständigen (Autocomplete aus allen Namen der
+  Stadt, Timer, Aufgeben); Rundenauswertung mit „Fehler üben“; Sound und Haptik (iOS-18-Switch-Trick),
+  Einstellungen im Konto-Screen.
+- Vorgezogen aus M3: Antworten werden lokal gespeichert (Leitner), Levels schalten frei, Sterne inkl. ★★★.
+  Offen in M3: „Wiederholen“ (fällige Straßen über alle Levels).
 
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.

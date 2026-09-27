@@ -199,10 +199,21 @@ async function main() {
 
   const outDir = path.join(ROOT, "apps", "web", "public", "data", config.id);
   await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
-  await writeFile(path.join(outDir, "levels.json"), JSON.stringify(levels) + "\n");
-  await writeFile(path.join(outDir, "names.json"), JSON.stringify(names) + "\n");
-  await writeFile(path.join(outDir, "streets.geojson"), JSON.stringify(collection) + "\n");
+  const outputs: [string, string][] = [
+    ["levels.json", JSON.stringify(levels) + "\n"],
+    ["names.json", JSON.stringify(names) + "\n"],
+    ["streets.geojson", JSON.stringify(collection) + "\n"],
+  ];
+  const previous = await Promise.all(
+    outputs.map(([f]) => readFile(path.join(outDir, f), "utf8").catch(() => null)),
+  );
+  const changed = outputs.some(([, content], i) => previous[i] !== content);
+  if (changed) {
+    for (const [f, content] of outputs) await writeFile(path.join(outDir, f), content);
+    await writeFile(path.join(outDir, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
+  } else {
+    console.log(`[${cityId}] data unchanged – keeping existing files`);
+  }
 
   // Plausibility report
   console.log(

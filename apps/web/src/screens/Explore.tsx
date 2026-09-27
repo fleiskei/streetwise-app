@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { LonLat, StreetFeature } from "@streetwise/core";
+import type { MapMarker } from "../components/MapView";
 import type { CityData } from "../lib/cityData";
 import { href } from "../lib/router";
 import { MapView } from "../components/MapView";
@@ -14,8 +15,11 @@ export function Explore({ data, levelId }: { data: CityData; levelId: string }) 
     () => (selected ? { [selected.street.properties.id]: "active" } : {}),
     [selected],
   );
-  const label = useMemo(
-    () => (selected ? { at: selected.at, text: selected.street.properties.name } : null),
+  const markers = useMemo<MapMarker[]>(
+    () =>
+      selected
+        ? [{ key: "sel", at: selected.at, text: selected.street.properties.name, variant: "sign" }]
+        : [],
     [selected],
   );
 
@@ -28,12 +32,12 @@ export function Explore({ data, levelId }: { data: CityData; levelId: string }) 
         data={data}
         streetIds={level.streetIds}
         status={status}
-        focus={level.bounds}
+        area={level.bounds}
         outline={district.outline}
-        label={label}
+        markers={markers}
         padding={{ top: 110, bottom: 170, left: 24, right: 24 }}
         attribution={false}
-        onStreetTap={(street, at) => {
+        onTap={({ street, at }) => {
           setMissed(!street);
           setSelected(street ? { street, at } : null);
         }}
@@ -41,7 +45,7 @@ export function Explore({ data, levelId }: { data: CityData; levelId: string }) 
       <div className="pointer-events-none absolute inset-x-0 top-0 pt-safe px-3">
         <div className="glass pointer-events-auto mx-auto flex max-w-xl items-center gap-2 rounded-2xl px-2 py-1.5 shadow-lg">
           <a
-            href={href({ name: "district", districtId: district.id })}
+            href={href({ name: "level", levelId: level.id })}
             aria-label="Zurück"
             className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
           >

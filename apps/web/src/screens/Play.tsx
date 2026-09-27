@@ -1,0 +1,88 @@
+import { useState } from "react";
+import { districtStatus, pickRoundStreets, ROUND_SIZE, type Mode } from "@streetwise/core";
+import type { CityData } from "../lib/cityData";
+import { feedback } from "../lib/feedback";
+import { progressStore } from "../lib/progress";
+import { href } from "../lib/router";
+import { ChoiceMode } from "../modes/ChoiceMode";
+import { CompleteMode } from "../modes/CompleteMode";
+import { LocateMode } from "../modes/LocateMode";
+import { MatchMode } from "../modes/MatchMode";
+import { RoundSummary } from "../modes/RoundSummary";
+import type { ModeProps, RoundResult } from "../modes/types";
+
+const MODES: Record<Mode, (p: ModeProps) => React.ReactNode> = {
+  choice: ChoiceMode,
+  match: MatchMode,
+  locate: LocateMode,
+  complete: CompleteMode,
+};
+
+type Phase =
+  | { kind: "play"; ids: string[]; round: number; unlockedBefore: number }
+  | { kind: "summary"; results: RoundResult[]; unlockedLevel: number | null; perfect: boolean };
+
+export function Play({ data, levelId, mode }: { data: CityData; levelId: string; mode: Mode }) {
+  const entry = data.levelById.get(levelId);
+
+  const unlockedCount = () => {
+    if (!entry) return 0;
+    const s = progressStore.get();
+    return districtStatus(entry.district, s.streets, new Set(s.perfectLevels)).filter(
+      (l) => l.unlocked,
+    ).length;
+  };
+  const newRound = (round: number, ids?: string[]): Phase => {
+    const all = entry?.level.streetIds ?? [];
+    const picked =
+      ids ??
+      (mode === "complete"
+        ? all
+        : pickRoundStreets(all, progressStore.get().streets, ROUND_SIZE, Date.now()));
+    return { kind: "play", ids: picked, round, unlockedBefore: unlockedCount() };
+  };
+  const [phase, setPhase] = useState<Phase>(() => newRound(0));
+
+  if (!entry) return null;
+  const { level, district } = entry;
+  const back = href({ name: "level", levelId });
+
+  if (phase.kind === "summary")
+    return (
+      <RoundSummary
+        data={data}
+        mode={mode}
+        results={phase.results}
+        unlockedLevel={phase.unlockedLevel}
+        perfect={phase.perfect}
+        back={back}
+        onRetryWrong={() =>
+          setPhase(
+            newRound(
+              Date.now(),
+              phase.results.filter((r) => !r.correct).map((r) => r.streetId),
+            ),
+          )
+        }
+        onAgain={() => setPhase(newRound(Date.now()))}
+      />
+    );
+
+  const Component = MODES[mode];
+  return (
+    <Component
+      key={phase.round}
+      data={data}
+      level={level}
+      district={district}
+      ids={phase.ids}
+      back={back}
+      onDone={(results, opts) => {
+        const after = unlockedCount();
+        const unlockedLevel = after > phase.unlockedBefore ? after : null;
+        if (unlockedLevel) feedback.levelUp();
+        setPhase({ kind: "summary", results, unlockedLevel, perfect: !!opts?.perfect });
+      }}
+    />
+  );
+}

@@ -4,10 +4,12 @@ import { useRoute } from "./lib/router";
 import { Centered, Screen } from "./components/ui";
 import { Home } from "./screens/Home";
 import { DistrictScreen } from "./screens/District";
+import { LevelScreen } from "./screens/Level";
 import { Account } from "./screens/Account";
 
 // The map (MapLibre, ~800 kB) loads only when needed.
 const Explore = lazy(() => import("./screens/Explore").then((m) => ({ default: m.Explore })));
+const Play = lazy(() => import("./screens/Play").then((m) => ({ default: m.Play })));
 
 const Spinner = () => (
   <Centered>
@@ -48,6 +50,19 @@ export function App() {
   switch (route.name) {
     case "district":
       return <DistrictScreen data={data} districtId={route.districtId} />;
+    case "level":
+      return <LevelScreen data={data} levelId={route.levelId} />;
+    case "play":
+      return (
+        <Suspense fallback={<Spinner />}>
+          <Play
+            key={`${route.levelId}/${route.mode}`}
+            data={data}
+            levelId={route.levelId}
+            mode={route.mode}
+          />
+        </Suspense>
+      );
     case "explore":
       return (
         <Suspense fallback={<Spinner />}>

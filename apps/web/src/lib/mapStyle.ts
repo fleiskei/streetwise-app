@@ -9,6 +9,8 @@ export const STATUS_COLORS = {
   correct: "#16a34a",
   wrong: "#dc2626",
   mastered: "#0d9488",
+  /** Part of the area but not in focus. */
+  muted: "#94a3b8",
 } as const;
 export type StreetStatus = keyof typeof STATUS_COLORS;
 
@@ -65,7 +67,7 @@ export function maskPolygon(outline: LonLat[][][]): Feature<Polygon> {
   };
 }
 
-export function padBounds([w, s, e, n]: BBox, factor = 0.35): BBox {
+export function padBounds([w, s, e, n]: BBox, factor = 1): BBox {
   const dx = (e - w) * factor;
   const dy = (n - s) * factor;
   return [w - dx, s - dy, e + dx, n + dy];
