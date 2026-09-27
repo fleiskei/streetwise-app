@@ -67,8 +67,10 @@ export function maskPolygon(outline: LonLat[][][]): Feature<Polygon> {
   };
 }
 
-export function padBounds([w, s, e, n]: BBox, factor = 1): BBox {
-  const dx = (e - w) * factor;
-  const dy = (n - s) * factor;
-  return [w - dx, s - dy, e + dx, n + dy];
+/**
+ * Pan/zoom limits: the whole city plus the same margin the tile extraction uses
+ * (tools/tiles), so one can zoom out to the entire city without leaving the tiles.
+ */
+export function cityLimits([w, s, e, n]: BBox, marginDeg = 0.01): BBox {
+  return [w - marginDeg, s - marginDeg, e + marginDeg, n + marginDeg];
 }

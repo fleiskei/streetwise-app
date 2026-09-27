@@ -7,6 +7,7 @@ export type Route =
   | { name: "level"; levelId: string }
   | { name: "explore"; levelId: string }
   | { name: "play"; levelId: string; mode: Mode }
+  | { name: "review" }
   | { name: "account" };
 
 /** German URL slugs for the quiz modes. */
@@ -29,6 +30,7 @@ export function parseRoute(hash: string): Route {
   if (a === "erkunden" && b) return { name: "explore", levelId: b };
   if (a === "spiel" && b && c && SLUG_MODES[c])
     return { name: "play", levelId: b, mode: SLUG_MODES[c] };
+  if (a === "wiederholen") return { name: "review" };
   if (a === "konto") return { name: "account" };
   return { name: "home" };
 }
@@ -46,6 +48,8 @@ export function href(route: Route): string {
       return `#/erkunden/${e(route.levelId)}`;
     case "play":
       return `#/spiel/${e(route.levelId)}/${MODE_SLUGS[route.mode]}`;
+    case "review":
+      return "#/wiederholen";
     case "account":
       return "#/konto";
   }

@@ -10,6 +10,7 @@ import { Account } from "./screens/Account";
 // The map (MapLibre, ~800 kB) loads only when needed.
 const Explore = lazy(() => import("./screens/Explore").then((m) => ({ default: m.Explore })));
 const Play = lazy(() => import("./screens/Play").then((m) => ({ default: m.Play })));
+const Review = lazy(() => import("./screens/Review").then((m) => ({ default: m.Review })));
 
 const Spinner = () => (
   <Centered>
@@ -61,6 +62,12 @@ export function App() {
             levelId={route.levelId}
             mode={route.mode}
           />
+        </Suspense>
+      );
+    case "review":
+      return (
+        <Suspense fallback={<Spinner />}>
+          <Review data={data} />
         </Suspense>
       );
     case "explore":

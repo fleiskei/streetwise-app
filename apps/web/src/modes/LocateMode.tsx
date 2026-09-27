@@ -14,12 +14,24 @@ interface Attempt {
   distance: number;
 }
 
-export function LocateMode({ data, level, district, ids, back, onDone }: ModeProps) {
+export function LocateMode({
+  data,
+  level: roundLevel,
+  district: roundDistrict,
+  ids,
+  back,
+  onDone,
+  step,
+}: ModeProps) {
   const [index, setIndex] = useState(0);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const results = useRef<RoundResult[]>([]);
   const target = data.streetsById.get(ids[index]!)!;
   const t = target.properties;
+  // Reviews mix levels: take the map context from the asked street.
+  const ctx = data.levelById.get(t.level);
+  const level = ctx?.level ?? roundLevel;
+  const district = ctx?.district ?? roundDistrict;
 
   const status = useMemo(() => {
     const s: Record<string, StreetStatus> = {};
@@ -90,9 +102,9 @@ export function LocateMode({ data, level, district, ids, back, onDone }: ModePro
   return (
     <GameShell
       back={back}
-      title={MODE_INFO.locate.title}
-      subtitle={`${district.name} · Level ${level.index + 1} · ${index + 1} von ${ids.length}`}
-      progress={(index + (attempt ? 1 : 0)) / ids.length}
+      title={step?.title ?? MODE_INFO.locate.title}
+      subtitle={`${district.name} · Level ${level.index + 1} · ${(step?.index ?? index) + 1} von ${step?.total ?? ids.length}`}
+      progress={((step?.index ?? 0) + index + (attempt ? 1 : 0)) / (step?.total ?? ids.length)}
       map={
         <MapView
           data={data}

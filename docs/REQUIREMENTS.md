@@ -43,15 +43,19 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 | M1 | **Multiple Choice** | Eine Straße ist markiert, dazu gibt es 4 Namen. Die falschen Antworten kommen bevorzugt aus der Nähe und vom gleichen Straßentyp. | leicht |
 | M2 | **Zuordnung Straße → Name** | 4–6 Straßen sind nummeriert markiert. Die Namen stehen als Chips darunter und werden per Tap-Tap oder Drag den Straßen zugeordnet. | mittel |
 | M3 | **Zuordnung Name → Straße** | Ein Name wird angezeigt, der Nutzer tippt die Straße auf der Karte an. Bei einem Fehler wird die richtige Straße samt Abstand gezeigt. | mittel |
-| M4 | **Karte vervollständigen** (schwer) | Alle Straßen des Gebiets sind grau. Der Nutzer tippt beliebige Namen ein; jeder richtige färbt „seine“ Straße ein. Fertig ist die Runde, wenn die Karte vollständig ist oder der Nutzer aufgibt. | schwer |
+| M4 | **Karte vervollständigen** (schwer) | Auf der Stadtkarte (nicht an Levels gebunden, siehe F-24) tippt der Nutzer beliebige Namen ein; jeder richtige färbt „seine“ Straße(n) ein. Der Stand bleibt gespeichert bis zum Reset. | schwer |
 
 - F-7 **Autocomplete in M4:** Vorgeschlagen werden Namen aus der **ganzen Stadt**, nicht nur aus dem
   aktuellen Gebiet. Die Liste verrät also nicht, welche Straßen gefragt sind. Vorschläge kommen erst ab
   3 Zeichen (einstellbar: 2/3/4/aus). Außerdem egal: Groß-/Kleinschreibung, ß/ss, „Str.“/„Straße“, Bindestriche.
-- F-8 M4 zeigt einen Fortschrittsbalken (x von n) und einen Timer. Wer aufgibt, bekommt die restlichen
-  Straßen angezeigt; sie zählen als „falsch“.
+- F-8 M4 zeigt den Zähler (x von n, stadtweit oder im Bezirksfilter). Statt „Aufgeben“ gibt es einen **Tipp**, der eine fehlende Straße nahe der Kartenmitte markiert (per Tipp gefundene Straßen zählen nicht für den Lernstand), und **Reset** für den ganzen Kartenstand.
 - F-9 Nach jeder Runde gibt es eine Zusammenfassung: Trefferquote, neu gemeisterte Straßen,
   Level-Fortschritt, und die Fehler können direkt wiederholt werden.
+
+- F-24 **Stadtkarte:** *Erkunden* und *Karte vervollständigen* laufen auf einer durchgehenden, frei zoombaren Karte der
+  ganzen Stadt mit optionalem Bezirksfilter. Multiple Choice, Zuordnen und Antippen bleiben an Levels gebunden.
+- F-25 **Zoom:** Man kann bis auf das ganze Stadtgebiet herauszoomen.
+- F-26 **Luftbild:** Die Grundkarte lässt sich auf ein Luftbild umschalten (freie Quelle, nur online).
 
 ### 2.3 Lernlogik: Spaced Repetition + Levels
 - F-10 Für jede Straße speichert die App pro Nutzer einen Wissensstand nach dem **Leitner-System**:
@@ -64,7 +68,7 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 - F-14 Das nächste Level wird frei, wenn im aktuellen **80 % gemeistert** sind. Level 1 jedes Bezirks ist sofort frei.
 - F-15 **„Wiederholen“**: Diese Runde mischt die fälligen Straßen aus allen freigeschalteten Levels (SR-gesteuert).
   Ohne Auswahl ist das die Startaktion.
-- F-16 Level-Stern-Bewertung: ★ alle einmal richtig, ★★ 80 % gemeistert, ★★★ M4 fehlerfrei bestanden.
+- F-16 Level-Stern-Bewertung: ★ alle einmal richtig, ★★ 80 % gemeistert, ★★★ alle Straßen des Levels in der Stadtkarte ohne Tipp gefunden.
 
 ### 2.4 Konto & Fortschritt
 - F-17 Der Login läuft per E-Mail-Einmalcode über Cloudflare Access. Nur `/api/*` ist geschützt, die App selbst bleibt ohne Login nutzbar (siehe 5.1).

@@ -85,9 +85,6 @@ export function Explore({ data, levelId }: { data: CityData; levelId: string }) 
               "Tippe auf eine blaue Straße, um ihren Namen zu sehen."
             )}
           </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            Quiz-Modi folgen: Multiple Choice, Zuordnen, Antippen und „Karte vervollständigen“.
-          </p>
           <p className="mt-2 text-[10px] text-[var(--muted)]">
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
               {data.meta.attribution}

@@ -22,7 +22,7 @@ import type { CityData } from "../lib/cityData";
 import {
   baseStyle,
   maskPolygon,
-  padBounds,
+  cityLimits,
   STATUS_COLORS,
   type StreetStatus,
 } from "../lib/mapStyle";
@@ -53,7 +53,7 @@ export interface MapViewProps {
   /** Streets drawn on top of the base map (and tappable). */
   streetIds: string[];
   status?: Record<string, StreetStatus>;
-  /** Area the map is restricted to (initial view and pan limits). */
+  /** Area of the round: initial view (the map can still be moved across the whole city). */
   area: BBox;
   /** Optional camera target inside the area; the map flies there when it changes. */
   focus?: BBox | null;
@@ -145,7 +145,7 @@ export function MapView({
       }),
       bounds: focus ?? area,
       fitBoundsOptions: { padding, maxZoom: 17 },
-      maxBounds: padBounds(area),
+      maxBounds: cityLimits(data.meta.bounds),
       attributionControl: attribution
         ? { compact: true, customAttribution: data.meta.attribution }
         : false,
@@ -282,13 +282,12 @@ export function MapView({
     else map.once("load", apply);
   }, [status, data, dark]);
 
-  // Area changes: new limits, dimming and view.
+  // Area changes: dimming outside the area (the pan limits stay the whole city).
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setMaxBounds(padBounds(area));
     (map.getSource("mask") as GeoJSONSource | undefined)?.setData(maskPolygon(outline ?? []));
-  }, [area, outline]);
+  }, [outline]);
 
   // Camera follows the focus (or the whole area).
   const focusKey = JSON.stringify(focus ?? area);
