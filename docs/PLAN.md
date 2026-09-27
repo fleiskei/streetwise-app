@@ -1,6 +1,6 @@
 # Streetwise – Umsetzungsplan
 
-Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
+Stand: 2026-09-27 · Status: **freigegeben, M0/M1 in Arbeit** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## 1. Architektur
 
@@ -138,6 +138,12 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 
 \* S ≈ ½ Tag, M ≈ 1–2 Tage, L ≈ 2–4 Tage Implementierungsarbeit
 
+**Stand 2026-09-27**
+- M0 Code fertig: Monorepo, CI, Deploy-Workflow, `/api/me` mit Access-JWT-Prüfung, Konto-Screen mit Login.
+  Offen: Cloudflare-Einrichtung (SETUP.md) und Login-Test auf dem iPhone.
+- M1 Code fertig: Datenpipeline, Tile-Extraktion, label-freier Style, Bezirke → Level-Pfad → Karte „Erkunden“
+  (Straße antippen zeigt den Namen). Offen: Aachen-Daten erzeugen (Workflow „Build city data“).
+
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.
 
@@ -149,6 +155,9 @@ bevor Backend und Offline dazukommen.
   Preview-Deploys für Branches. D1-Migrationen laufen im Workflow mit `wrangler d1 migrations apply --remote`.
 
 ## 9. Einrichtung durch dich (einmalig)
+
+Schritt-für-Schritt-Anleitung: [SETUP.md](SETUP.md).
+
 Hosting und Login laufen wie bei spltrainer unter `*.pages.dev` mit Cloudflare Access. Eine eigene Domain ist vorerst nicht nötig.
 
 1. **Pages-Projekt** `streetwise` anlegen (Direct Upload, der Workflow deployt).

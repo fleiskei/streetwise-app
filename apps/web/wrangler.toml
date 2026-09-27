@@ -1,0 +1,16 @@
+# Cloudflare Pages project (Direct Upload via GitHub Actions, see .github/workflows/deploy.yml).
+name = "streetwise"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Cloudflare Access (Zero Trust) protecting /api/*; see docs/SETUP.md.
+# Team domain, e.g. "myteam.cloudflareaccess.com", and the application's AUD tag.
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+
+# D1 binding follows in milestone M4 (progress sync):
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "streetwise"
+# database_id = "<id>"

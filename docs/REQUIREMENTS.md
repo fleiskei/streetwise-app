@@ -1,6 +1,6 @@
 # Streetwise – Anforderungen
 
-Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe**
+Stand: 2026-09-27 · Status: **freigegeben**
 
 Streetwise ist eine Web-App (PWA), mit der man die Straßennamen einer Stadt lernt. Sie zeigt eine Karte
 ohne Beschriftung, und der Nutzer muss die Namen selbst zuordnen. Erste Stadt ist **Aachen**.

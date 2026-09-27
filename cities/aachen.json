@@ -1,0 +1,18 @@
+{
+  "id": "aachen",
+  "name": "Aachen",
+  "osm": {
+    "cityArea": "[\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"][\"name\"=\"Aachen\"]",
+    "districtAdminLevel": 9
+  },
+  "expectedDistricts": [
+    "Aachen-Mitte",
+    "Brand",
+    "Eilendorf",
+    "Haaren",
+    "Kornelimünster/Walheim",
+    "Laurensberg",
+    "Richterich"
+  ],
+  "center": [6.0839, 50.7753]
+}

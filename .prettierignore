@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+dist/
+apps/web/public/data/
+apps/web/public/tiles/
+docs/
+*.md

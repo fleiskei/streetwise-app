@@ -1,0 +1,2 @@
+# Copy to .dev.vars for `pnpm dev:api`: pretends a logged-in Access user locally.
+DEV_USER_EMAIL=me@example.com
