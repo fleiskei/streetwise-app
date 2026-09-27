@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { applyAnswer, isDue, isMastered, replay, type Answer } from "./index";
+import {
+  applyAnswer,
+  dueStreetIds,
+  isDue,
+  isMastered,
+  nextDueAt,
+  replay,
+  type Answer,
+} from "./index";
 
 const DAY = 86_400_000;
 
@@ -34,5 +42,20 @@ describe("leitner", () => {
     ];
     expect(replay(answers)).toEqual(replay([...answers].reverse()));
     expect(replay(answers).a!.box).toBe(1);
+  });
+});
+
+describe("review selection", () => {
+  const p = (box: number, dueAt: number) => ({ box, dueAt, nCorrect: 1, nWrong: 0, lastAt: 0 });
+  const progress = { a: p(3, 50), b: p(1, 80), c: p(1, 20), d: p(2, 500), e: p(4, 300) };
+
+  it("returns due streets, weakest and most overdue first", () => {
+    expect(dueStreetIds(progress, 100)).toEqual(["c", "b", "a"]);
+    expect(dueStreetIds(progress, 100, 2)).toEqual(["c", "b"]);
+  });
+
+  it("finds the next due time", () => {
+    expect(nextDueAt(progress, 100)).toBe(300);
+    expect(nextDueAt({}, 100)).toBeNull();
   });
 });

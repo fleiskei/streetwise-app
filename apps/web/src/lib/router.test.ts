@@ -10,6 +10,7 @@ describe("router", () => {
       { name: "level", levelId: "aachen-mitte-1" },
       { name: "play", levelId: "aachen-mitte-1", mode: "complete" },
       { name: "play", levelId: "brand-2", mode: "choice" },
+      { name: "review" },
       { name: "account" },
     ];
     for (const r of routes) expect(parseRoute(href(r))).toEqual(r);

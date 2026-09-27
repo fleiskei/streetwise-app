@@ -14,6 +14,8 @@ export interface ModeProps {
   ids: string[];
   back: string;
   onDone: (results: RoundResult[], opts?: { perfect?: boolean }) => void;
+  /** Set when the mode shows a single question of a longer sequence (review). */
+  step?: { index: number; total: number; title: string };
 }
 
 export const MODE_INFO: Record<

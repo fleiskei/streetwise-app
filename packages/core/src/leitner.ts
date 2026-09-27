@@ -63,3 +63,27 @@ export function isMastered(p: StreetProgress | undefined): boolean {
 export function isDue(p: StreetProgress | undefined, now: number): boolean {
   return p !== undefined && p.dueAt <= now;
 }
+
+/**
+ * Streets due for review (seen before and due now): weakest box first, then the most
+ * overdue. Unseen streets are introduced through levels, not reviews.
+ */
+export function dueStreetIds(
+  progress: Record<string, StreetProgress>,
+  now: number,
+  limit = Infinity,
+): string[] {
+  return Object.entries(progress)
+    .filter(([, p]) => isDue(p, now))
+    .sort(([, a], [, b]) => a.box - b.box || a.dueAt - b.dueAt)
+    .slice(0, limit)
+    .map(([id]) => id);
+}
+
+/** When the next not-yet-due street becomes due (epoch ms), or null. */
+export function nextDueAt(progress: Record<string, StreetProgress>, now: number): number | null {
+  let next: number | null = null;
+  for (const p of Object.values(progress))
+    if (p.dueAt > now && (next === null || p.dueAt < next)) next = p.dueAt;
+  return next;
+}

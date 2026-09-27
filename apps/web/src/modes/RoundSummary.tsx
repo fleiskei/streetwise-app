@@ -5,22 +5,27 @@ import { MODE_INFO, type RoundResult } from "./types";
 export function RoundSummary({
   data,
   mode,
+  title,
   results,
-  unlockedLevel,
+  unlocked,
   perfect,
   back,
   onRetryWrong,
   onAgain,
+  backLabel = "Zurück zum Level",
 }: {
   data: CityData;
   mode: Mode;
+  /** Overrides the mode title (e.g. "Wiederholen"). */
+  title?: string;
   results: RoundResult[];
-  /** Number (1-based) of a level unlocked by this round. */
-  unlockedLevel: number | null;
+  /** Label of a level unlocked by this round. */
+  unlocked: string | null;
   perfect: boolean;
   back: string;
   onRetryWrong: () => void;
   onAgain: () => void;
+  backLabel?: string;
 }) {
   const correct = results.filter((r) => r.correct).length;
   const ratio = results.length ? correct / results.length : 0;
@@ -40,7 +45,7 @@ export function RoundSummary({
     <div className="min-h-full pt-safe pb-safe px-4">
       <div className="mx-auto max-w-xl py-6 text-center">
         <p className="text-sm font-medium uppercase tracking-wide text-[var(--muted)]">
-          {MODE_INFO[mode].title}
+          {title ?? MODE_INFO[mode].title}
         </p>
         <div className="relative mx-auto mt-4 h-36 w-36">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
@@ -76,9 +81,9 @@ export function RoundSummary({
         </div>
         <h1 className="mt-4 text-2xl font-bold tracking-tight">{headline}</h1>
 
-        {unlockedLevel && (
+        {unlocked && (
           <div className="animate-pop mx-auto mt-4 max-w-sm rounded-2xl bg-gradient-to-r from-amber to-orange-400 p-4 font-semibold text-[#3b2300] shadow-lg">
-            🎉 Level {unlockedLevel} freigeschaltet!
+            🎉 {unlocked} freigeschaltet!
           </div>
         )}
         {perfect && (
@@ -116,7 +121,7 @@ export function RoundSummary({
             Neue Runde
           </button>
           <a href={back} className="w-full rounded-xl px-4 py-3 font-medium text-[var(--muted)]">
-            Zurück zum Level
+            {backLabel}
           </a>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { districtStatus, pickRoundStreets, ROUND_SIZE, type Mode } from "@streetwise/core";
+import { pickRoundStreets, ROUND_SIZE, type Mode } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { feedback } from "../lib/feedback";
+import { newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
 import { progressStore } from "../lib/progress";
 import { href } from "../lib/router";
 import { ChoiceMode } from "../modes/ChoiceMode";
@@ -19,19 +20,12 @@ const MODES: Record<Mode, (p: ModeProps) => React.ReactNode> = {
 };
 
 type Phase =
-  | { kind: "play"; ids: string[]; round: number; unlockedBefore: number }
-  | { kind: "summary"; results: RoundResult[]; unlockedLevel: number | null; perfect: boolean };
+  | { kind: "play"; ids: string[]; round: number; unlockedBefore: Set<string> }
+  | { kind: "summary"; results: RoundResult[]; unlocked: string | null; perfect: boolean };
 
 export function Play({ data, levelId, mode }: { data: CityData; levelId: string; mode: Mode }) {
   const entry = data.levelById.get(levelId);
 
-  const unlockedCount = () => {
-    if (!entry) return 0;
-    const s = progressStore.get();
-    return districtStatus(entry.district, s.streets, new Set(s.perfectLevels)).filter(
-      (l) => l.unlocked,
-    ).length;
-  };
   const newRound = (round: number, ids?: string[]): Phase => {
     const all = entry?.level.streetIds ?? [];
     const picked =
@@ -39,7 +33,12 @@ export function Play({ data, levelId, mode }: { data: CityData; levelId: string;
       (mode === "complete"
         ? all
         : pickRoundStreets(all, progressStore.get().streets, ROUND_SIZE, Date.now()));
-    return { kind: "play", ids: picked, round, unlockedBefore: unlockedCount() };
+    return {
+      kind: "play",
+      ids: picked,
+      round,
+      unlockedBefore: unlockedLevelIds(data, progressStore.get()),
+    };
   };
   const [phase, setPhase] = useState<Phase>(() => newRound(0));
 
@@ -53,7 +52,7 @@ export function Play({ data, levelId, mode }: { data: CityData; levelId: string;
         data={data}
         mode={mode}
         results={phase.results}
-        unlockedLevel={phase.unlockedLevel}
+        unlocked={phase.unlocked}
         perfect={phase.perfect}
         back={back}
         onRetryWrong={() =>
@@ -78,10 +77,13 @@ export function Play({ data, levelId, mode }: { data: CityData; levelId: string;
       ids={phase.ids}
       back={back}
       onDone={(results, opts) => {
-        const after = unlockedCount();
-        const unlockedLevel = after > phase.unlockedBefore ? after : null;
-        if (unlockedLevel) feedback.levelUp();
-        setPhase({ kind: "summary", results, unlockedLevel, perfect: !!opts?.perfect });
+        const unlocked = newlyUnlocked(
+          data,
+          phase.unlockedBefore,
+          unlockedLevelIds(data, progressStore.get()),
+        );
+        if (unlocked) feedback.levelUp();
+        setPhase({ kind: "summary", results, unlocked, perfect: !!opts?.perfect });
       }}
     />
   );

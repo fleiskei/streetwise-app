@@ -1,6 +1,6 @@
 # Streetwise – Umsetzungsplan
 
-Stand: 2026-09-27 · Status: **freigegeben, M0–M2 fertig, weiter mit M3/M4** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
+Stand: 2026-09-27 · Status: **freigegeben, M0–M3 fertig, weiter mit M4** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## 1. Architektur
 
@@ -147,8 +147,10 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
   (Toleranz zoomabhängig, Abstand bei Fehlern), Karte vervollständigen (Autocomplete aus allen Namen der
   Stadt, Timer, Aufgeben); Rundenauswertung mit „Fehler üben“; Sound und Haptik (iOS-18-Switch-Trick),
   Einstellungen im Konto-Screen.
-- Vorgezogen aus M3: Antworten werden lokal gespeichert (Leitner), Levels schalten frei, Sterne inkl. ★★★.
-  Offen in M3: „Wiederholen“ (fällige Straßen über alle Levels).
+- ✅ M3: Antworten lokal gespeichert (Leitner), Levels schalten frei, Sterne inkl. ★★★; „Wiederholen“ über alle
+  Levels (bis 15 fällige Straßen, schwache als Multiple Choice, sichere zum Antippen); Startseite mit
+  „Wiederholen“ (Anzahl fällig) und „Weiterlernen“ (nächstes offenes Level im zuletzt gespielten Bezirk).
+- M4 vorbereitet: D1-Datenbank `streetwise` angelegt (id `a182a8ff-5498-43cb-bf40-b6c3810427a4`).
 
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.

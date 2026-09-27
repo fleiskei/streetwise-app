@@ -1,5 +1,7 @@
-import { districtStatus } from "@streetwise/core";
+import { useState } from "react";
+import { districtStatus, dueStreetIds } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
+import { continueLevel } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { Card, ProgressBar, Screen, TopBar } from "../components/ui";
@@ -12,6 +14,9 @@ export function Home({ data }: { data: CityData }) {
     const mastered = status.reduce((s, l) => s + l.mastered, 0);
     return { d, total, mastered, levels: status.length };
   });
+  const [now] = useState(() => Date.now());
+  const due = dueStreetIds(progress.streets, now).length;
+  const next = continueLevel(data, progress);
   const total = districts.reduce((s, x) => s + x.total, 0);
   const mastered = districts.reduce((s, x) => s + x.mastered, 0);
 
@@ -55,6 +60,36 @@ export function Home({ data }: { data: CityData }) {
           ? ? ?straße
         </div>
       </section>
+
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        <a
+          href={href({ name: "review" })}
+          className={`rounded-2xl p-4 active:scale-[0.99] ${due ? "bg-amber text-[#3b2300] shadow-md" : "border border-[var(--line)] bg-[var(--surface-solid)]"}`}
+        >
+          <span className="block text-2xl font-bold tabular-nums">{due}</span>
+          <span className="block text-sm font-semibold">Wiederholen</span>
+          <span className={`block text-xs ${due ? "opacity-80" : "text-[var(--muted)]"}`}>
+            {due ? "Straßen fällig" : "nichts fällig"}
+          </span>
+        </a>
+        {next ? (
+          <a
+            href={href({ name: "level", levelId: next.level.id })}
+            className="rounded-2xl bg-brand p-4 text-white shadow-md active:scale-[0.99]"
+          >
+            <span className="block text-2xl font-bold">▶</span>
+            <span className="block text-sm font-semibold">Weiterlernen</span>
+            <span className="block truncate text-xs opacity-80">
+              {next.district.name} · Level {next.level.index + 1}
+            </span>
+          </a>
+        ) : (
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-solid)] p-4">
+            <span className="block text-2xl">🏆</span>
+            <span className="block text-sm font-semibold">Alles gemeistert</span>
+          </div>
+        )}
+      </div>
 
       <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
         Stadtbezirke
