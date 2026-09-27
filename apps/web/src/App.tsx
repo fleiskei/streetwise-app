@@ -8,7 +8,7 @@ import { LevelScreen } from "./screens/Level";
 import { Account } from "./screens/Account";
 
 // The map (MapLibre, ~800 kB) loads only when needed.
-const Explore = lazy(() => import("./screens/Explore").then((m) => ({ default: m.Explore })));
+const CityMap = lazy(() => import("./screens/CityMap").then((m) => ({ default: m.CityMap })));
 const Play = lazy(() => import("./screens/Play").then((m) => ({ default: m.Play })));
 const Review = lazy(() => import("./screens/Review").then((m) => ({ default: m.Review })));
 
@@ -70,10 +70,10 @@ export function App() {
           <Review data={data} />
         </Suspense>
       );
-    case "explore":
+    case "city":
       return (
         <Suspense fallback={<Spinner />}>
-          <Explore data={data} levelId={route.levelId} />
+          <CityMap key="city" data={data} mode={route.mode} focus={route.focus} />
         </Suspense>
       );
     default:

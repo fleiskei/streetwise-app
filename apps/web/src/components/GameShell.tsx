@@ -12,6 +12,7 @@ export function GameShell({
   map,
   children,
   bottomInset = 0,
+  headerExtra,
 }: {
   back: string;
   title: ReactNode;
@@ -22,6 +23,8 @@ export function GameShell({
   map: ReactNode;
   children: ReactNode;
   bottomInset?: number;
+  /** Extra row inside the header (e.g. filter chips). */
+  headerExtra?: ReactNode;
 }) {
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -52,6 +55,7 @@ export function GameShell({
             </div>
             {right}
           </div>
+          {headerExtra}
           {progress !== undefined && (
             <div className="h-1 bg-black/5 dark:bg-white/10">
               <div

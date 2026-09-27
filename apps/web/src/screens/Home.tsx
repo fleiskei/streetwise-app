@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { districtStatus, dueStreetIds } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
-import { continueLevel } from "../lib/levelProgress";
+import { useCityMap } from "../lib/cityMap";
+import { continueLevel, perfectLevelIds } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { Card, ProgressBar, Screen, TopBar } from "../components/ui";
 
 export function Home({ data }: { data: CityData }) {
   const progress = useProgress();
+  const cityMap = useCityMap();
+  const perfect = perfectLevelIds(data, cityMap);
   const districts = data.levels.districts.map((d) => {
-    const status = districtStatus(d, progress.streets, new Set(progress.perfectLevels));
+    const status = districtStatus(d, progress.streets, perfect);
     const total = status.reduce((s, l) => s + l.total, 0);
     const mastered = status.reduce((s, l) => s + l.mastered, 0);
     return { d, total, mastered, levels: status.length };
@@ -89,6 +92,34 @@ export function Home({ data }: { data: CityData }) {
             <span className="block text-sm font-semibold">Alles gemeistert</span>
           </div>
         )}
+      </div>
+
+      <div className="mb-6 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-solid)]">
+        <div className="flex items-baseline justify-between px-4 pt-4">
+          <span className="text-[17px] font-semibold">Stadtkarte</span>
+          <span className="text-sm tabular-nums text-[var(--muted)]">
+            {Object.keys(cityMap.found).length.toLocaleString("de-DE")} /{" "}
+            {data.meta.streetCount.toLocaleString("de-DE")} eingetragen
+          </span>
+        </div>
+        <ProgressBar
+          value={Object.keys(cityMap.found).length / Math.max(1, data.meta.streetCount)}
+          className="mx-4 mt-3"
+        />
+        <div className="mt-3 grid grid-cols-2 border-t border-[var(--line)] text-center text-[15px] font-semibold">
+          <a
+            href={href({ name: "city", mode: "explore" })}
+            className="py-3 active:bg-black/5 dark:active:bg-white/5"
+          >
+            Erkunden
+          </a>
+          <a
+            href={href({ name: "city", mode: "complete" })}
+            className="border-l border-[var(--line)] py-3 text-brand active:bg-black/5 dark:active:bg-white/5"
+          >
+            Vervollständigen
+          </a>
+        </div>
       </div>
 
       <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">

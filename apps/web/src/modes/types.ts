@@ -43,7 +43,7 @@ export const MODE_INFO: Record<
   complete: {
     title: "Karte vervollständigen",
     short: "Vervollständigen",
-    description: "Tippe alle Straßennamen des Levels ein, bis die Karte komplett ist.",
+    description: "Trage auf der Stadtkarte Straßennamen ein – dein Stand bleibt gespeichert.",
     difficulty: "schwer",
   },
 };

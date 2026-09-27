@@ -8,19 +8,16 @@ import { createStore, useStore } from "./store";
 export interface ProgressState {
   streets: Record<string, StreetProgress>;
   answers: (Answer & { id: string })[];
-  /** Levels finished in "Karte vervollständigen" without giving up (third star). */
-  perfectLevels: string[];
 }
 
 export const progressStore = createStore<ProgressState>(
   "streetwise-progress-v1",
-  { streets: {}, answers: [], perfectLevels: [] },
+  { streets: {}, answers: [] },
   (raw) => {
     const r = raw as Partial<ProgressState>;
     return {
       streets: r.streets ?? {},
       answers: r.answers ?? [],
-      perfectLevels: r.perfectLevels ?? [],
     };
   },
 );
@@ -43,10 +40,4 @@ export function recordAnswers(items: { streetId: string; mode: Mode; correct: bo
     answers.push(answer);
   }
   progressStore.set({ ...s, streets, answers });
-}
-
-export function markPerfect(levelId: string) {
-  const s = progressStore.get();
-  if (!s.perfectLevels.includes(levelId))
-    progressStore.set({ ...s, perfectLevels: [...s.perfectLevels, levelId] });
 }

@@ -1,15 +1,13 @@
 import { districtStatus, type District, type Level } from "@streetwise/core";
 import type { CityData } from "./cityData";
+import type { CityMapState } from "./cityMap";
 import type { ProgressState } from "./progress";
 
 /** Ids of all unlocked levels (to detect level-ups after a round). */
 export function unlockedLevelIds(data: CityData, progress: ProgressState): Set<string> {
-  const perfect = new Set(progress.perfectLevels);
   const out = new Set<string>();
   for (const d of data.levels.districts)
-    districtStatus(d, progress.streets, perfect).forEach(
-      (s, i) => s.unlocked && out.add(d.levels[i]!.id),
-    );
+    districtStatus(d, progress.streets).forEach((s, i) => s.unlocked && out.add(d.levels[i]!.id));
   return out;
 }
 
@@ -40,11 +38,23 @@ export function continueLevel(
   const districts = [...data.levels.districts].sort(
     (a, b) => Number(b.id === lastDistrict) - Number(a.id === lastDistrict),
   );
-  const perfect = new Set(progress.perfectLevels);
   for (const district of districts) {
-    const status = districtStatus(district, progress.streets, perfect);
+    const status = districtStatus(district, progress.streets);
     const i = status.findIndex((s) => s.unlocked && s.ratio < 0.8);
     if (i >= 0) return { level: district.levels[i]!, district };
   }
   return null;
+}
+
+/** Levels whose streets were all found in the city map without hints (third star, F-16). */
+export function perfectLevelIds(data: CityData, cityMap: CityMapState): Set<string> {
+  const out = new Set<string>();
+  for (const d of data.levels.districts)
+    for (const l of d.levels)
+      if (
+        l.streetIds.length &&
+        l.streetIds.every((id) => cityMap.found[id] && !cityMap.found[id]!.hinted)
+      )
+        out.add(l.id);
+  return out;
 }
