@@ -161,7 +161,7 @@ Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell
 
 | # | Erweiterung | Ergebnis | Aufwand |
 |---|---|---|---|
-| E1 | **Weiter rauszoomen** | Die Pan- und Zoomgrenze ist das Stadtgebiet plus Rand statt Level plus Rand. Die Level-Ansicht bleibt als Startausschnitt. | S |
+| E1 ✅ | **Weiter rauszoomen** | Die Pan- und Zoomgrenze ist das Stadtgebiet plus Rand statt Level plus Rand. Die Level-Ansicht bleibt als Startausschnitt. | S |
 | E2 | **Stadtkarte** (Erkunden und Vervollständigen ohne Level) | siehe unten | L |
 | E3 | **Satellitenbild** | Umschalter Karte/Luftbild. Quelle sind die NRW-Luftbilder (DOP, Geobasis NRW, Lizenz dl-de/zero-2.0), nur online. Straßen-Overlay und Schilder bleiben. Endpoint und CORS werden geprüft; falls nötig, laufen die Anfragen über eine Pages Function mit Cache. | M |
 
