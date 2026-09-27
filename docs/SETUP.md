@@ -23,7 +23,7 @@ pnpm --filter @streetwise/web exec wrangler pages project create streetwise --pr
 ```
 
 Danach deployt der Workflow `.github/workflows/deploy.yml` bei jedem Push:
-`main` → `streetwise.pages.dev`, andere Branches → `<branch>.streetwise.pages.dev`.
+`main` → `streetwise.pages.dev`, alle anderen Branches → `staging.streetwise.pages.dev`.
 
 > Das Projekt **nicht** mit Git verbinden (kein „Connect to Git“), sonst kollidieren die beiden Deploy-Wege.
 
@@ -36,7 +36,7 @@ Danach deployt der Workflow `.github/workflows/deploy.yml` bei jedem Push:
    - Application name: `Streetwise API`
    - Session duration: z. B. **1 month**
    - Public hostname: Domain `streetwise.pages.dev`, **Path `api`**
-     (optional zweiter Eintrag `*.streetwise.pages.dev` / Path `api` für Preview-Deployments)
+     (zweiter Eintrag `*.streetwise.pages.dev` bzw. `staging.streetwise.pages.dev` / Path `api` für Staging)
    - Policy: Action **Allow**, Include → **Emails** → deine Adresse(n)
 4. Nach dem Speichern: in der Application unter **Overview** das **Application Audience (AUD) Tag** kopieren.
 5. In `apps/web/wrangler.toml` eintragen (oder mir schicken, dann committe ich es):
