@@ -1,5 +1,5 @@
 import { districtStatus, levelStatus, postcodeProgress, type Mode } from "@streetwise/core";
-import type { CityData } from "../lib/cityData";
+import { CITY_SCOPE, type CityData } from "../lib/cityData";
 import { useCityMap } from "../lib/cityMap";
 import { perfectLevelIds } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
@@ -27,14 +27,16 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
     );
   const { level, district } = entry;
   const status = districtStatus(district, progress.streets, perfect)[level.index]!;
-  // Postcode knowledge: separate progress over the level's streets that have a postcode (F-28).
+  // Postcode knowledge (F-28): only in "Ganz Aachen" – a district is roughly one postcode.
+  // Separate progress over the level's streets that have a postcode.
   const plzLevel = {
     ...level,
     streetIds: level.streetIds.filter(
       (id) => data.streetsById.get(id)?.properties.postcodes?.length,
     ),
   };
-  const hasPlz = data.postcodes.length > 0 && plzLevel.streetIds.length > 0;
+  const hasPlz =
+    district.id === CITY_SCOPE && data.postcodes.length > 0 && plzLevel.streetIds.length > 0;
   const plzStatus = levelStatus(plzLevel, postcodeProgress(progress.streets), {
     unlocked: true,
     perfectComplete: false,

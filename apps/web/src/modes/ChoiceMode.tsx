@@ -6,7 +6,7 @@ import { feedback } from "../lib/feedback";
 import { streetsBBox } from "../lib/geo";
 import type { StreetStatus } from "../lib/mapStyle";
 import { recordAnswers } from "../lib/progress";
-import { MODE_INFO, type ModeProps, type RoundResult } from "./types";
+import { MODE_INFO, questionContext, type ModeProps, type RoundResult } from "./types";
 
 export function ChoiceMode({
   data,
@@ -22,16 +22,12 @@ export function ChoiceMode({
   const results = useRef<RoundResult[]>([]);
   const target = data.streetsById.get(ids[index]!)!;
   const t = target.properties;
-  // Reviews mix levels: take the map context from the asked street.
-  const ctx = data.levelById.get(t.level);
-  const level = ctx?.level ?? roundLevel;
-  const district = ctx?.district ?? roundDistrict;
+  const { level, district } = questionContext(data, roundLevel, roundDistrict, t.id);
 
+  // Distractors from the same scope (district or the whole city).
   const candidates = useMemo(
     () =>
-      data.streets.features
-        .filter((f) => f.properties.district === district.id)
-        .map((f) => f.properties),
+      district.levels.flatMap((l) => l.streetIds).map((id) => data.streetsById.get(id)!.properties),
     [data, district],
   );
   const options = useMemo<StreetProps[]>(

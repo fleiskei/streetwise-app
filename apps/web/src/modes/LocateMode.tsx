@@ -6,7 +6,7 @@ import { feedback } from "../lib/feedback";
 import { pointBBox, streetsBBox, unionBBox, minSizeBBox } from "../lib/geo";
 import type { StreetStatus } from "../lib/mapStyle";
 import { recordAnswers } from "../lib/progress";
-import { MODE_INFO, type ModeProps, type RoundResult } from "./types";
+import { MODE_INFO, questionContext, type ModeProps, type RoundResult } from "./types";
 
 interface Attempt {
   at: LonLat;
@@ -28,10 +28,7 @@ export function LocateMode({
   const results = useRef<RoundResult[]>([]);
   const target = data.streetsById.get(ids[index]!)!;
   const t = target.properties;
-  // Reviews mix levels: take the map context from the asked street.
-  const ctx = data.levelById.get(t.level);
-  const level = ctx?.level ?? roundLevel;
-  const district = ctx?.district ?? roundDistrict;
+  const { level, district } = questionContext(data, roundLevel, roundDistrict, t.id);
 
   const status = useMemo(() => {
     const s: Record<string, StreetStatus> = {};

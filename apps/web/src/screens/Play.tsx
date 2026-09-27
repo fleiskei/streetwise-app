@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { pickRoundStreets, postcodeProgress, ROUND_SIZE } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { feedback } from "../lib/feedback";
-import { newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
+import { lastLevelStore, newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
 import { progressStore } from "../lib/progress";
 import { href, type LevelMode } from "../lib/router";
 import { ChoiceMode } from "../modes/ChoiceMode";
@@ -56,6 +56,7 @@ export function Play({
     };
   };
   const [phase, setPhase] = useState<Phase>(() => newRound(0));
+  useEffect(() => lastLevelStore.set({ id: levelId }), [levelId]);
 
   if (!entry) return null;
   const { level, district } = entry;
@@ -96,6 +97,7 @@ export function Play({
           data,
           phase.unlockedBefore,
           unlockedLevelIds(data, progressStore.get()),
+          district.id,
         );
         if (unlocked) feedback.levelUp();
         setPhase({ kind: "summary", results, unlocked, perfect: !!opts?.perfect });

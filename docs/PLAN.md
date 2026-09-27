@@ -199,6 +199,7 @@ richtige Gebiet eingeblendet. „PLZ → Gebiet antippen“ folgt in einem zweit
 | E4.3 ✅ | Modus „PLZ zuordnen“ | Die Straße ist markiert, dazu 4 PLZ. Die falschen Antworten kommen aus benachbarten Gebieten, nie eine PLZ, in der die Straße liegt. **Jede PLZ, in der die Straße liegt, zählt als richtig.** Danach werden Gebietsgrenze und PLZ eingeblendet. | M |
 | E4.4 ✅ | Einbindung | Level-Seite: Karte „PLZ zuordnen“ und ein zweiter Balken „PLZ gemeistert“. „Wiederholen“ fragt fällige PLZ mit ab. | S |
 | E4.5 ✅ | Anzeige | Umschalter „PLZ“ neben dem Luftbild-Schalter (Stadtkarte/Erkunden): Gebietsgrenzen und große PLZ-Beschriftungen, die Einstellung wird gespeichert. | S |
+| E4.6 ✅ | „Ganz Aachen“ (Feedback) | Startseite: „Ganz Aachen“ oder ein Bezirk. „Ganz Aachen“ ist ein Pseudo-Bezirk (`ganze-stadt`, Level `ganze-stadt-<n>`), den die App beim Laden aus allen Straßen baut – mit derselben Gruppierung wie die Pipeline (`buildLevels`, jetzt in `@streetwise/core`), Ursprung Stadtmitte, ~77 Level à 20 Straßen. Keine Datenänderung nötig. Modi wie in den Bezirken plus „PLZ zuordnen“; **PLZ nur hier**, auf Bezirks-Leveln nicht mehr. Erkunden mit PLZ-Schalter: angetippte Straße zeigt ihr PLZ-Gebiet (Herauszoomen, Fläche + Rand, PLZ). „Weiterlernen“ merkt sich das zuletzt gespielte Level (lokal). | M |
 
 Quelle: OSM-Grenzen `boundary=postal_code` (ODbL, wie die Straßen); laut E4.0 vollständig und konsistent.
 Hinweis: Die Innenstadt-PLZ (52062, 52064) sind flächenmäßig klein, dort liegen aber viele Straßen.

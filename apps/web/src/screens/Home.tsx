@@ -20,6 +20,8 @@ export function Home({ data }: { data: CityData }) {
   const [now] = useState(() => Date.now());
   const due = dueStreetIds(progress.streets, now).length;
   const next = continueLevel(data, progress);
+  const cityStatus = districtStatus(data.city, progress.streets, perfect);
+  const cityUnlocked = cityStatus.filter((l) => l.unlocked).length;
   const total = districts.reduce((s, x) => s + x.total, 0);
   const mastered = districts.reduce((s, x) => s + x.mastered, 0);
 
@@ -123,8 +125,31 @@ export function Home({ data }: { data: CityData }) {
       </div>
 
       <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
-        Stadtbezirke
+        Lernen
       </h2>
+      <Card href={href({ name: "district", districtId: data.city.id })}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[17px] font-semibold">{data.city.name}</span>
+          <span className="text-sm tabular-nums text-[var(--muted)]">
+            {total} Straßen · {data.city.levels.length} Level
+          </span>
+        </div>
+        <p className="mt-0.5 text-sm text-[var(--muted)]">
+          Die ganze Stadt von innen nach außen
+          {data.postcodes.length > 0 && (
+            <>
+              {" · "}
+              <span className="font-medium text-[#7c3aed]">mit Postleitzahlen</span>
+            </>
+          )}
+          {cityUnlocked > 1 && ` · ${cityUnlocked} Level frei`}
+        </p>
+        <ProgressBar value={total ? mastered / total : 0} className="mt-3" />
+      </Card>
+
+      <h3 className="mb-2 mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        oder ein Stadtbezirk
+      </h3>
       <div className="grid gap-3">
         {districts.map(({ d, total, mastered, levels }) => (
           <Card key={d.id} href={href({ name: "district", districtId: d.id })}>

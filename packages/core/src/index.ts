@@ -3,6 +3,7 @@ export * from "./normalize";
 export * from "./autocomplete";
 export * from "./leitner";
 export * from "./levels";
+export * from "./grouping";
 export * from "./rng";
 export * from "./geo";
 export * from "./distractors";

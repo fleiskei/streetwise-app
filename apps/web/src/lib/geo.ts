@@ -1,4 +1,10 @@
-import { geometryBBox, type BBox, type LonLat, type StreetFeature } from "@streetwise/core";
+import {
+  geometryBBox,
+  type BBox,
+  type LonLat,
+  type PostcodeFeature,
+  type StreetFeature,
+} from "@streetwise/core";
 
 /** Union of bounding boxes. */
 export function unionBBox(boxes: BBox[]): BBox {
@@ -34,4 +40,21 @@ export function streetsBBox(streets: StreetFeature[], minMeters = 300): BBox {
 
 export function pointBBox(p: LonLat): BBox {
   return [p[0], p[1], p[0], p[1]];
+}
+
+/**
+ * Camera for showing a street together with its postcode area(s): the union of both, but at
+ * most ~4 km around the street so the street stays visible for large areas.
+ */
+export function postcodeRevealBBox(street: StreetFeature, areas: PostcodeFeature[]): BBox {
+  const own = streetsBBox([street], 400);
+  if (!areas.length) return own;
+  const all = unionBBox([own, ...areas.map((a) => geometryBBox(a.geometry))]);
+  const cap = minSizeBBox(pointBBox(street.properties.center), 4000);
+  return [
+    Math.max(all[0], cap[0]),
+    Math.max(all[1], cap[1]),
+    Math.min(all[2], cap[2]),
+    Math.min(all[3], cap[3]),
+  ];
 }

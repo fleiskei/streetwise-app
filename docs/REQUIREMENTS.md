@@ -58,11 +58,19 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 
 - F-27 **Postleitzahlen (E4):** Ziel ist, die PLZ-Gebiete zu kennen. Modus **„PLZ zuordnen“**: markierte Straße,
   4 PLZ zur Auswahl; jede PLZ, in der die Straße liegt, zählt als richtig; danach wird das PLZ-Gebiet eingeblendet.
-- F-28 Der PLZ-Wissensstand ist pro Straße getrennt vom Namen (eigene Leitner-Boxen) und läuft über dieselben Levels.
-  Die Level-Seite zeigt ihn als zweiten Balken, „Wiederholen“ fragt fällige PLZ mit ab. Levels werden weiter nur
-  über die Namen freigeschaltet.
-- F-29 Auf der Stadtkarte blendet ein Umschalter „PLZ“ die Gebietsgrenzen mit großen PLZ-Beschriftungen ein.
+- F-28 Der PLZ-Wissensstand ist pro Straße getrennt vom Namen (eigene Leitner-Boxen). „PLZ zuordnen“ gibt es **nur in
+  „Ganz Aachen“** (F-31), nicht in den Bezirken (ein Bezirk entspricht meist einer einzigen PLZ). Die Level-Seite
+  von „Ganz Aachen“ zeigt den PLZ-Stand als zweiten Balken, „Wiederholen“ fragt fällige PLZ mit ab. Levels werden
+  weiter nur über die Namen freigeschaltet.
+- F-29 Auf der Stadtkarte (Erkunden) blendet ein Umschalter „PLZ“ die Gebietsgrenzen mit großen PLZ-Beschriftungen
+  ein. Ist er an, zeigt eine angetippte Straße wie im Quiz ihr PLZ-Gebiet: Karte zoomt heraus, Gebiet eingefärbt mit
+  Rand, PLZ am Straßenschild und im Infobereich.
 - F-30 (später, E4b) „PLZ → Gebiet antippen“.
+- F-31 **„Ganz Aachen“:** Auf der Startseite wählt man einen Bezirk oder die ganze Stadt. „Ganz Aachen“ hat eigene
+  Levels nach denselben Regeln wie ein Bezirk (F-13/F-14, von der Innenstadt nach außen) und dieselben Modi
+  (Multiple Choice, Zuordnen, Antippen, Karte vervollständigen) plus „PLZ zuordnen“. Der Wissensstand gilt pro Straße
+  und damit für Bezirke und ganze Stadt gemeinsam. *Erkunden* und *Vervollständigen* bleiben daneben als eigene
+  Stadtkarte bestehen (F-24).
 
 ### 2.3 Lernlogik: Spaced Repetition + Levels
 - F-10 Für jede Straße speichert die App pro Nutzer einen Wissensstand nach dem **Leitner-System**:

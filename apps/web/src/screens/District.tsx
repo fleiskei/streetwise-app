@@ -1,5 +1,5 @@
 import { districtStatus } from "@streetwise/core";
-import type { CityData } from "../lib/cityData";
+import { CITY_SCOPE, scopes, type CityData } from "../lib/cityData";
 import { useCityMap } from "../lib/cityMap";
 import { perfectLevelIds } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
@@ -10,7 +10,7 @@ export function DistrictScreen({ data, districtId }: { data: CityData; districtI
   const progress = useProgress();
   const cityMap = useCityMap();
   const perfect = perfectLevelIds(data, cityMap);
-  const district = data.levels.districts.find((d) => d.id === districtId);
+  const district = scopes(data).find((d) => d.id === districtId);
   if (!district)
     return (
       <Screen>
@@ -22,6 +22,12 @@ export function DistrictScreen({ data, districtId }: { data: CityData; districtI
   return (
     <Screen>
       <TopBar title={district.name} back={href({ name: "home" })} />
+      {district.id === CITY_SCOPE && (
+        <p className="mb-4 px-1 text-sm text-[var(--muted)]">
+          Alle Straßen der Stadt, von den Hauptstraßen im Zentrum nach außen – mit Postleitzahlen.
+          Dein Lernstand gilt für Bezirke und ganze Stadt gemeinsam.
+        </p>
+      )}
       {district.levels.length === 0 && <Centered>Keine Straßen in diesem Bezirk.</Centered>}
       <ol className="relative ml-5 border-l-2 border-dashed border-[var(--line)] pb-4">
         {district.levels.map((level, i) => {

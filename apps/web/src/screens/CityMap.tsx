@@ -10,10 +10,10 @@ import {
 } from "@streetwise/core";
 import { MapView, type MapMarker, type MapTap } from "../components/MapView";
 import { GameShell } from "../components/GameShell";
-import type { CityData } from "../lib/cityData";
+import { CITY_SCOPE, type CityData } from "../lib/cityData";
 import { addFound, addHint, resetCityMap, useCityMap } from "../lib/cityMap";
 import { feedback } from "../lib/feedback";
-import { streetsBBox } from "../lib/geo";
+import { postcodeRevealBBox, streetsBBox } from "../lib/geo";
 import type { StreetStatus } from "../lib/mapStyle";
 import { recordAnswers } from "../lib/progress";
 import { href, type CityFocus, type CityMode } from "../lib/router";
@@ -45,7 +45,12 @@ export function CityMap({
   const initial = useMemo(() => {
     if (focus?.kind === "level") {
       const e = data.levelById.get(focus.id);
-      if (e) return { district: e.district.id, view: e.level.bounds };
+      // A level of "Ganz Aachen" opens the whole city, framed on the level.
+      if (e)
+        return {
+          district: e.district.id === CITY_SCOPE ? null : e.district.id,
+          view: e.level.bounds,
+        };
     }
     if (focus?.kind === "district") {
       const d = data.levels.districts.find((x) => x.id === focus.id);
@@ -88,6 +93,21 @@ export function CityMap({
   const cityNorms = useMemo(() => new Set(index.map((e) => e.norm)), [index]);
   const name = (id: string) => data.streetsById.get(id)!.properties.name;
 
+  // Explore with the PLZ button on: a tapped street shows its postcode area(s) (F-30).
+  const showPlz = mode === "explore" && settings.postcodes && data.postcodes.length > 0;
+  const selectedCodes = selected
+    ? (data.streetsById.get(selected.id)!.properties.postcodes ?? [])
+    : [];
+  const plzAreas = useMemo(
+    () =>
+      showPlz && selected
+        ? (data.streetsById.get(selected.id)!.properties.postcodes ?? [])
+            .map((c) => data.postcodeByCode.get(c))
+            .filter((a) => !!a)
+        : undefined,
+    [showPlz, selected, data],
+  );
+
   const foundIn = (ids: string[]) => ids.reduce((n, id) => n + (cityMap.found[id] ? 1 : 0), 0);
   const foundCount = foundIn(scopeIds);
 
@@ -102,7 +122,15 @@ export function CityMap({
   const markers = useMemo<MapMarker[]>(() => {
     const m: MapMarker[] = [];
     if (mode === "explore" && selected)
-      m.push({ key: "sel", at: selected.at, text: name(selected.id), variant: "sign" });
+      m.push({
+        key: "sel",
+        at: selected.at,
+        text:
+          showPlz && selectedCodes.length
+            ? `${name(selected.id)} · ${selectedCodes.join(" / ")}`
+            : name(selected.id),
+        variant: "sign",
+      });
     if (mode === "complete") {
       if (shown && cityMap.found[shown]) {
         const p = data.streetsById.get(shown)!.properties;
@@ -128,7 +156,7 @@ export function CityMap({
     }
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, selected, shown, target, cityMap, data]);
+  }, [mode, selected, shown, target, cityMap, data, showPlz]);
 
   const setMode = (m: CityMode) => {
     setMessage(null);
@@ -233,6 +261,13 @@ export function CityMap({
     const id = tap.street?.properties.id ?? null;
     if (mode === "explore") {
       setSelected(id ? { id, at: tap.at } : null);
+      if (id && showPlz) {
+        const street = data.streetsById.get(id)!;
+        const areas = (street.properties.postcodes ?? [])
+          .map((c) => data.postcodeByCode.get(c))
+          .filter((a) => !!a);
+        if (areas.length) setView(postcodeRevealBBox(street, areas));
+      }
       return;
     }
     if (!id) return;
@@ -321,6 +356,7 @@ export function CityMap({
             padding={PADDING}
             attribution={false}
             postcodeToggle={mode === "explore"}
+            areas={plzAreas}
           />
         }
       >
@@ -330,12 +366,17 @@ export function CityMap({
               {selected ? (
                 <>
                   {name(selected.id)}
+                  {showPlz && selectedCodes.length > 0 && (
+                    <span className="ml-2 font-bold tabular-nums text-[#7c3aed]">
+                      {selectedCodes.join(" / ")}
+                    </span>
+                  )}
                   {cityMap.found[selected.id] && (
                     <span className="ml-2 text-sm text-ok">✓ eingetragen</span>
                   )}
                 </>
               ) : (
-                "Tippe auf eine Straße, um ihren Namen zu sehen."
+                `Tippe auf eine Straße, um ihren Namen${showPlz ? " und ihr PLZ-Gebiet" : ""} zu sehen.`
               )}
             </p>
             <p className="mt-2 text-[10px] text-[var(--muted)]">{data.meta.attribution}</p>

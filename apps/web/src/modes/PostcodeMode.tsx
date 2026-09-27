@@ -1,18 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  geometryBBox,
-  pickPostcodeDistractors,
-  postcodeKey,
-  shuffle,
-  type BBox,
-} from "@streetwise/core";
+import { pickPostcodeDistractors, postcodeKey, shuffle, type BBox } from "@streetwise/core";
 import { MapView, type MapMarker } from "../components/MapView";
 import { GameShell, PrimaryButton, SHEET_PADDING } from "../components/GameShell";
 import { feedback } from "../lib/feedback";
-import { minSizeBBox, streetsBBox, unionBBox } from "../lib/geo";
+import { postcodeRevealBBox, streetsBBox } from "../lib/geo";
 import type { StreetStatus } from "../lib/mapStyle";
 import { recordAnswers } from "../lib/progress";
-import { MODE_INFO, type ModeProps, type RoundResult } from "./types";
+import { MODE_INFO, questionContext, type ModeProps, type RoundResult } from "./types";
 
 /**
  * "PLZ zuordnen" (F-27): a street is highlighted, pick its postcode from four. Any postcode
@@ -33,9 +27,7 @@ export function PostcodeMode({
   const target = data.streetsById.get(ids[index]!)!;
   const t = target.properties;
   const codes = useMemo(() => t.postcodes ?? [], [t]);
-  const ctx = data.levelById.get(t.level);
-  const level = ctx?.level ?? roundLevel;
-  const district = ctx?.district ?? roundDistrict;
+  const { level, district } = questionContext(data, roundLevel, roundDistrict, t.id);
 
   const options = useMemo(() => {
     const areas = data.postcodes.map((p) => ({
@@ -75,20 +67,11 @@ export function PostcodeMode({
     [answered, correct, t, codes],
   );
 
-  // Before the answer: the street; afterwards: street and its postcode area(s), but at most
-  // ~2 km around the street so it stays visible for large areas (the sign names the code).
-  const focus = useMemo<BBox>(() => {
-    const street = streetsBBox([target], 400);
-    if (!areas?.length) return street;
-    const all = unionBBox([street, ...areas.map((a) => geometryBBox(a.geometry))]);
-    const cap = minSizeBBox([t.center[0], t.center[1], t.center[0], t.center[1]], 4000);
-    return [
-      Math.max(all[0], cap[0]),
-      Math.max(all[1], cap[1]),
-      Math.min(all[2], cap[2]),
-      Math.min(all[3], cap[3]),
-    ];
-  }, [target, areas, t]);
+  // Before the answer: the street; afterwards also its postcode area(s).
+  const focus = useMemo<BBox>(
+    () => (areas?.length ? postcodeRevealBBox(target, areas) : streetsBBox([target], 400)),
+    [target, areas],
+  );
 
   const next = () => {
     if (index + 1 < ids.length) {

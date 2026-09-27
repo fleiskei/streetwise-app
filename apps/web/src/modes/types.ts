@@ -53,3 +53,18 @@ export const MODE_INFO: Record<
     difficulty: "schwer",
   },
 };
+
+/**
+ * Map context for a question: the round's level if it contains the street (levels of a
+ * district or of "Ganz Aachen"), otherwise the street's own district level (reviews mix levels).
+ */
+export function questionContext(
+  data: CityData,
+  level: Level,
+  district: District,
+  streetId: string,
+): { level: Level; district: District } {
+  if (level.streetIds.includes(streetId)) return { level, district };
+  const own = data.levelById.get(data.streetsById.get(streetId)?.properties.level ?? "");
+  return own ?? { level, district };
+}
