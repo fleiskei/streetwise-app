@@ -57,6 +57,7 @@ export interface MapViewProps {
   area: BBox;
   /** Optional camera target inside the area; the map flies there when it changes. */
   focus?: BBox | null;
+  /** Area to keep bright; everything outside is dimmed. Omit (or empty) for no dimming. */
   outline?: LonLat[][][];
   onTap?: (tap: MapTap) => void;
   markers?: MapMarker[];
@@ -64,39 +65,42 @@ export interface MapViewProps {
   padding?: { top: number; bottom: number; left: number; right: number };
   /** Show MapLibre's attribution control; pass false when the screen shows attribution itself. */
   attribution?: boolean;
+  /** Status of drawn streets without an explicit entry in `status`. */
+  baseStatus?: StreetStatus;
+  /** Called after the map stopped moving: centre of the free (unpadded) area and visible bounds. */
+  onMoveEnd?: (center: LonLat, bounds: BBox) => void;
 }
 
 const DEFAULT_PADDING = { top: 40, bottom: 40, left: 24, right: 24 };
 
-const colorExpr = [
-  "match",
-  ["coalesce", ["feature-state", "status"], "idle"],
-  ...Object.entries(STATUS_COLORS).flat(),
-  STATUS_COLORS.idle,
-] as unknown as ExpressionSpecification;
+const statusOf = (base: StreetStatus) => ["coalesce", ["feature-state", "status"], base];
+const colorExpr = (base: StreetStatus) =>
+  [
+    "match",
+    statusOf(base),
+    ...Object.entries(STATUS_COLORS).flat(),
+    STATUS_COLORS.idle,
+  ] as unknown as ExpressionSpecification;
+const fillOpacityExpr = (base: StreetStatus) =>
+  ["match", statusOf(base), "muted", 0.25, 0.5] as unknown as ExpressionSpecification;
 
 // Zoom must be the top-level interpolation input; the status factor goes into each stop.
-const statusFactor = [
-  "match",
-  ["coalesce", ["feature-state", "status"], "idle"],
-  "active",
-  1.6,
-  "muted",
-  0.7,
-  1,
-];
-const widthExpr = (base: [number, number, number]) =>
-  [
+const widthExpr = (base: [number, number, number], baseStatus: StreetStatus) => {
+  const factor = ["match", statusOf(baseStatus), "active", 1.6, "muted", 0.7, 1];
+  return [
     "interpolate",
     ["linear"],
     ["zoom"],
     12,
-    ["*", base[0], statusFactor],
+    ["*", base[0], factor],
     15,
-    ["*", base[1], statusFactor],
+    ["*", base[1], factor],
     18,
-    ["*", base[2], statusFactor],
+    ["*", base[2], factor],
   ] as unknown as ExpressionSpecification;
+};
+const CASING_WIDTH: [number, number, number] = [4.5, 8, 16];
+const LINE_WIDTH: [number, number, number] = [2.5, 5, 12];
 
 const inFilter = (geom: "LineString" | "Polygon", ids: string[]) =>
   [
@@ -122,15 +126,23 @@ export function MapView({
   markers,
   padding = DEFAULT_PADDING,
   attribution = true,
+  baseStatus = "idle",
+  onMoveEnd,
 }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const dark = useDarkMode();
   const tapRef = useRef(onTap);
   const idsRef = useRef(streetIds);
+  const baseRef = useRef(baseStatus);
+  const moveRef = useRef(onMoveEnd);
+  const paddingRef = useRef(padding);
   useLayoutEffect(() => {
     tapRef.current = onTap;
     idsRef.current = streetIds;
+    baseRef.current = baseStatus;
+    moveRef.current = onMoveEnd;
+    paddingRef.current = padding;
   });
 
   // Create the map once per theme.
@@ -180,6 +192,7 @@ export function MapView({
         type: "fill",
         source: "mask",
         paint: { "fill-color": dark ? "#000" : "#0b1220", "fill-opacity": dark ? 0.45 : 0.28 },
+        layout: { visibility: outline?.length ? "visible" : "none" },
       });
       map.addLayer({
         id: "squares",
@@ -187,14 +200,8 @@ export function MapView({
         source: "streets",
         filter: inFilter("Polygon", idsRef.current),
         paint: {
-          "fill-color": colorExpr,
-          "fill-opacity": [
-            "match",
-            ["coalesce", ["feature-state", "status"], "idle"],
-            "muted",
-            0.25,
-            0.5,
-          ],
+          "fill-color": colorExpr(baseRef.current),
+          "fill-opacity": fillOpacityExpr(baseRef.current),
         },
       });
       map.addLayer({
@@ -205,7 +212,7 @@ export function MapView({
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": dark ? "#0b1220" : "#ffffff",
-          "line-width": widthExpr([4.5, 8, 16]),
+          "line-width": widthExpr(CASING_WIDTH, baseRef.current),
         },
       });
       map.addLayer({
@@ -214,8 +221,23 @@ export function MapView({
         source: "streets",
         filter: inFilter("LineString", idsRef.current),
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": colorExpr, "line-width": widthExpr([2.5, 5, 12]) },
+        paint: {
+          "line-color": colorExpr(baseRef.current),
+          "line-width": widthExpr(LINE_WIDTH, baseRef.current),
+        },
       });
+    });
+
+    map.on("moveend", () => {
+      const cb = moveRef.current;
+      if (!cb) return;
+      const p = paddingRef.current;
+      const c = map.getContainer();
+      const x = (p.left + c.clientWidth - p.right) / 2;
+      const y = (p.top + c.clientHeight - p.bottom) / 2;
+      const ll = map.unproject([x, y]);
+      const b = map.getBounds();
+      cb([ll.lng, ll.lat], [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
     });
 
     map.on("click", (e: MapMouseEvent) => {
@@ -266,6 +288,21 @@ export function MapView({
     else map.once("load", apply);
   }, [streetIds, dark]);
 
+  // Default status of drawn streets.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      map.setPaintProperty("squares", "fill-color", colorExpr(baseStatus));
+      map.setPaintProperty("squares", "fill-opacity", fillOpacityExpr(baseStatus));
+      map.setPaintProperty("streets", "line-color", colorExpr(baseStatus));
+      map.setPaintProperty("streets", "line-width", widthExpr(LINE_WIDTH, baseStatus));
+      map.setPaintProperty("streets-casing", "line-width", widthExpr(CASING_WIDTH, baseStatus));
+    };
+    if (map.getLayer("streets")) apply();
+    else map.once("load", apply);
+  }, [baseStatus, dark]);
+
   // Per-street status via feature-state.
   useEffect(() => {
     const map = mapRef.current;
@@ -287,6 +324,8 @@ export function MapView({
     const map = mapRef.current;
     if (!map) return;
     (map.getSource("mask") as GeoJSONSource | undefined)?.setData(maskPolygon(outline ?? []));
+    if (map.getLayer("mask"))
+      map.setLayoutProperty("mask", "visibility", outline?.length ? "visible" : "none");
   }, [outline]);
 
   // Camera follows the focus (or the whole area).

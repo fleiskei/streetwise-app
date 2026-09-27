@@ -43,12 +43,11 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 | M1 | **Multiple Choice** | Eine Straße ist markiert, dazu gibt es 4 Namen. Die falschen Antworten kommen bevorzugt aus der Nähe und vom gleichen Straßentyp. | leicht |
 | M2 | **Zuordnung Straße → Name** | 4–6 Straßen sind nummeriert markiert. Die Namen stehen als Chips darunter und werden per Tap-Tap oder Drag den Straßen zugeordnet. | mittel |
 | M3 | **Zuordnung Name → Straße** | Ein Name wird angezeigt, der Nutzer tippt die Straße auf der Karte an. Bei einem Fehler wird die richtige Straße samt Abstand gezeigt. | mittel |
-| M4 | **Karte vervollständigen** (schwer) | Auf der Stadtkarte (nicht an Levels gebunden, siehe F-24) tippt der Nutzer beliebige Namen ein; jeder richtige färbt „seine“ Straße(n) ein. Der Stand bleibt gespeichert bis zum Reset. | schwer |
+| M4 | **Karte vervollständigen** (schwer) | Auf der Stadtkarte (nicht an Levels gebunden, siehe F-24) tippt der Nutzer eine graue Straße an und gibt ihren Namen ein; richtig → grün, die nächste Straße wählt man selbst. Der Stand bleibt gespeichert bis zum Reset. | schwer |
 
-- F-7 **Autocomplete in M4:** Vorgeschlagen werden Namen aus der **ganzen Stadt**, nicht nur aus dem
-  aktuellen Gebiet. Die Liste verrät also nicht, welche Straßen gefragt sind. Vorschläge kommen erst ab
-  3 Zeichen (einstellbar: 2/3/4/aus). Außerdem egal: Groß-/Kleinschreibung, ß/ss, „Str.“/„Straße“, Bindestriche.
-- F-8 M4 zeigt den Zähler (x von n, stadtweit oder im Bezirksfilter). Statt „Aufgeben“ gibt es einen **Tipp**, der eine fehlende Straße nahe der Kartenmitte markiert (per Tipp gefundene Straßen zählen nicht für den Lernstand), und **Reset** für den ganzen Kartenstand.
+- F-7 **Autocomplete in M4:** Vorgeschlagen werden Namen aus der **ganzen Stadt**, damit die Liste nicht verrät,
+  welche Straße markiert ist. Vorschläge erst ab 3 Zeichen (einstellbar: 2/3/4/aus). Außerdem egal: Groß-/Kleinschreibung, ß/ss, „Str.“/„Straße“, Bindestriche.
+- F-8 M4 zeigt den Zähler (x von n, stadtweit oder im Bezirksfilter). Eine falsche Eingabe zählt einmal pro Straße als Fehler. Statt „Aufgeben“ gibt es einen **Tipp** (erste Buchstaben der markierten bzw. einer nahen fehlenden Straße; per Tipp gefundene Straßen zählen nicht für den Lernstand) und **Reset** für den ganzen Kartenstand.
 - F-9 Nach jeder Runde gibt es eine Zusammenfassung: Trefferquote, neu gemeisterte Straßen,
   Level-Fortschritt, und die Fehler können direkt wiederholt werden.
 

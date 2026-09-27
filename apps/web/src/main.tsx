@@ -6,6 +6,9 @@ import "./styles.css";
 
 registerSW({ immediate: true });
 
+// Drop caches of earlier versions (they may contain HTML stored for tile/data URLs).
+if ("caches" in window) for (const name of ["tiles", "city-data"]) void caches.delete(name);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

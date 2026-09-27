@@ -1,11 +1,15 @@
 import { districtStatus } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
+import { useCityMap } from "../lib/cityMap";
+import { perfectLevelIds } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { Centered, LockIcon, ProgressBar, Screen, Stars, TopBar } from "../components/ui";
 
 export function DistrictScreen({ data, districtId }: { data: CityData; districtId: string }) {
   const progress = useProgress();
+  const cityMap = useCityMap();
+  const perfect = perfectLevelIds(data, cityMap);
   const district = data.levels.districts.find((d) => d.id === districtId);
   if (!district)
     return (
@@ -13,7 +17,7 @@ export function DistrictScreen({ data, districtId }: { data: CityData; districtI
         <TopBar title="Unbekannter Bezirk" back={href({ name: "home" })} />
       </Screen>
     );
-  const status = districtStatus(district, progress.streets, new Set(progress.perfectLevels));
+  const status = districtStatus(district, progress.streets, perfect);
 
   return (
     <Screen>

@@ -1,5 +1,7 @@
 import { districtStatus, type Mode } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
+import { useCityMap } from "../lib/cityMap";
+import { perfectLevelIds } from "../lib/levelProgress";
 import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { MODE_INFO } from "../modes/types";
@@ -14,6 +16,8 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 
 export function LevelScreen({ data, levelId }: { data: CityData; levelId: string }) {
   const progress = useProgress();
+  const cityMap = useCityMap();
+  const perfect = perfectLevelIds(data, cityMap);
   const entry = data.levelById.get(levelId);
   if (!entry)
     return (
@@ -22,9 +26,7 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
       </Screen>
     );
   const { level, district } = entry;
-  const status = districtStatus(district, progress.streets, new Set(progress.perfectLevels))[
-    level.index
-  ]!;
+  const status = districtStatus(district, progress.streets, perfect)[level.index]!;
 
   return (
     <Screen>
@@ -50,7 +52,7 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
       </Card>
 
       <a
-        href={href({ name: "explore", levelId })}
+        href={href({ name: "city", mode: "explore", focus: { kind: "level", id: levelId } })}
         className="mt-4 flex items-center gap-3 rounded-2xl border border-dashed border-[var(--line)] p-4 active:scale-[0.99]"
       >
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-sign text-white">
@@ -69,7 +71,7 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
         <span>
           <span className="block font-semibold">Erkunden</span>
           <span className="block text-sm text-[var(--muted)]">
-            Straßen antippen und Namen ansehen – ohne Wertung.
+            Auf der Stadtkarte Straßen antippen und Namen ansehen – ohne Wertung.
           </span>
         </span>
       </a>
@@ -81,7 +83,14 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
         {MODE_ORDER.map((m) => {
           const info = MODE_INFO[m];
           return (
-            <Card key={m} href={href({ name: "play", levelId, mode: m })}>
+            <Card
+              key={m}
+              href={
+                m === "complete"
+                  ? href({ name: "city", mode: "complete", focus: { kind: "level", id: levelId } })
+                  : href({ name: "play", levelId, mode: m })
+              }
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[17px] font-semibold">{info.title}</span>
                 <span

@@ -3,6 +3,17 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+/**
+ * Never cache HTML for tile/data URLs: a missing file used to be answered with the SPA's
+ * index.html (status 200), which then stuck in the cache and hid the tiles for good.
+ */
+const rejectHtml = {
+  cacheWillUpdate: async ({ response }: { response: Response }) =>
+    response.status === 200 && !(response.headers.get("content-type") ?? "").includes("text/html")
+      ? response
+      : null,
+};
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? "dev"),
@@ -41,19 +52,25 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/cdn-cgi\//],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
+          // tiles.json decides whether tiles exist: always ask the network first.
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith("/tiles.json"),
+            handler: "NetworkFirst",
+            options: { cacheName: "tiles-meta-v2", plugins: [rejectHtml] },
+          },
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/tiles/"),
             handler: "CacheFirst",
             options: {
-              cacheName: "tiles",
+              cacheName: "tiles-v2",
               expiration: { maxEntries: 5000 },
-              cacheableResponse: { statuses: [200] },
+              plugins: [rejectHtml],
             },
           },
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/data/"),
             handler: "StaleWhileRevalidate",
-            options: { cacheName: "city-data", cacheableResponse: { statuses: [200] } },
+            options: { cacheName: "city-data-v2", plugins: [rejectHtml] },
           },
         ],
       },

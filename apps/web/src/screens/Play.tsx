@@ -1,38 +1,41 @@
 import { useState } from "react";
-import { pickRoundStreets, ROUND_SIZE, type Mode } from "@streetwise/core";
+import { pickRoundStreets, ROUND_SIZE } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { feedback } from "../lib/feedback";
 import { newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
 import { progressStore } from "../lib/progress";
-import { href } from "../lib/router";
+import { href, type LevelMode } from "../lib/router";
 import { ChoiceMode } from "../modes/ChoiceMode";
-import { CompleteMode } from "../modes/CompleteMode";
 import { LocateMode } from "../modes/LocateMode";
 import { MatchMode } from "../modes/MatchMode";
 import { RoundSummary } from "../modes/RoundSummary";
 import type { ModeProps, RoundResult } from "../modes/types";
 
-const MODES: Record<Mode, (p: ModeProps) => React.ReactNode> = {
+const MODES: Record<LevelMode, (p: ModeProps) => React.ReactNode> = {
   choice: ChoiceMode,
   match: MatchMode,
   locate: LocateMode,
-  complete: CompleteMode,
 };
 
 type Phase =
   | { kind: "play"; ids: string[]; round: number; unlockedBefore: Set<string> }
   | { kind: "summary"; results: RoundResult[]; unlocked: string | null; perfect: boolean };
 
-export function Play({ data, levelId, mode }: { data: CityData; levelId: string; mode: Mode }) {
+export function Play({
+  data,
+  levelId,
+  mode,
+}: {
+  data: CityData;
+  levelId: string;
+  mode: LevelMode;
+}) {
   const entry = data.levelById.get(levelId);
 
   const newRound = (round: number, ids?: string[]): Phase => {
     const all = entry?.level.streetIds ?? [];
     const picked =
-      ids ??
-      (mode === "complete"
-        ? all
-        : pickRoundStreets(all, progressStore.get().streets, ROUND_SIZE, Date.now()));
+      ids ?? pickRoundStreets(all, progressStore.get().streets, ROUND_SIZE, Date.now());
     return {
       kind: "play",
       ids: picked,

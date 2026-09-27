@@ -5,10 +5,16 @@ export type Route =
   | { name: "home" }
   | { name: "district"; districtId: string }
   | { name: "level"; levelId: string }
-  | { name: "explore"; levelId: string }
-  | { name: "play"; levelId: string; mode: Mode }
+  | { name: "city"; mode: CityMode; focus?: CityFocus }
+  | { name: "play"; levelId: string; mode: LevelMode }
   | { name: "review" }
   | { name: "account" };
+
+export type CityMode = "explore" | "complete";
+/** Modes played within a level; "complete" lives on the city map. */
+export type LevelMode = Exclude<Mode, "complete">;
+export type CityFocus = { kind: "level" | "district"; id: string };
+const CITY_SLUGS: Record<CityMode, string> = { explore: "erkunden", complete: "vervollstaendigen" };
 
 /** German URL slugs for the quiz modes. */
 export const MODE_SLUGS: Record<Mode, string> = {
@@ -17,17 +23,28 @@ export const MODE_SLUGS: Record<Mode, string> = {
   locate: "antippen",
   complete: "vervollstaendigen",
 };
-const SLUG_MODES = Object.fromEntries(Object.entries(MODE_SLUGS).map(([m, s]) => [s, m])) as Record<
-  string,
-  Mode
->;
+const SLUG_MODES = Object.fromEntries(
+  Object.entries(MODE_SLUGS)
+    .filter(([m]) => m !== "complete")
+    .map(([m, s]) => [s, m]),
+) as Record<string, LevelMode>;
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
-  const [a, b, c] = parts;
+  const [a, b, c, d] = parts;
+  if (a === "stadtkarte") {
+    const mode: CityMode = b === CITY_SLUGS.complete ? "complete" : "explore";
+    const kind = c === "level" ? "level" : c === "bezirk" ? "district" : null;
+    return kind && d ? { name: "city", mode, focus: { kind, id: d } } : { name: "city", mode };
+  }
   if (a === "bezirk" && b) return { name: "district", districtId: b };
   if (a === "level" && b) return { name: "level", levelId: b };
-  if (a === "erkunden" && b) return { name: "explore", levelId: b };
+  // Old links: explore a level → city map focused on that level.
+  if (a === "erkunden" && b)
+    return { name: "city", mode: "explore", focus: { kind: "level", id: b } };
+  // "Karte vervollständigen" runs on the city map (F-24), focused on the level.
+  if (a === "spiel" && b && c === MODE_SLUGS.complete)
+    return { name: "city", mode: "complete", focus: { kind: "level", id: b } };
   if (a === "spiel" && b && c && SLUG_MODES[c])
     return { name: "play", levelId: b, mode: SLUG_MODES[c] };
   if (a === "wiederholen") return { name: "review" };
@@ -44,8 +61,11 @@ export function href(route: Route): string {
       return `#/bezirk/${e(route.districtId)}`;
     case "level":
       return `#/level/${e(route.levelId)}`;
-    case "explore":
-      return `#/erkunden/${e(route.levelId)}`;
+    case "city": {
+      const base = `#/stadtkarte/${CITY_SLUGS[route.mode]}`;
+      if (!route.focus) return base;
+      return `${base}/${route.focus.kind === "level" ? "level" : "bezirk"}/${e(route.focus.id)}`;
+    }
     case "play":
       return `#/spiel/${e(route.levelId)}/${MODE_SLUGS[route.mode]}`;
     case "review":
