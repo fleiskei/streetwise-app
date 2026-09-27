@@ -9,7 +9,7 @@ ohne Beschriftung, und der Nutzer muss die Namen selbst zuordnen. Erste Stadt is
 
 | Thema | Entscheidung |
 |---|---|
-| Repository | `fleiskei/streetwise`, App-Name „Streetwise“ |
+| Repository | `fleiskei/streetwise-app`, App-Name „Streetwise“ |
 | Gebiet | Aachen, getrennt nach **Stadtbezirken** wählbar (Mitte, Brand, Eilendorf, Haaren, Kornelimünster/Walheim, Laurensberg, Richterich) |
 | Inhalte | **Straßen und Plätze** mit Namen (OSM) |
 | Nutzer | Ich bzw. ein kleiner Kreis, keine öffentliche Bestenliste |
