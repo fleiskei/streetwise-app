@@ -9,7 +9,7 @@ import {
 import { MapView, type MapMarker } from "../components/MapView";
 import { GameShell, PrimaryButton, SHEET_PADDING } from "../components/GameShell";
 import { feedback } from "../lib/feedback";
-import { streetsBBox, unionBBox } from "../lib/geo";
+import { minSizeBBox, streetsBBox, unionBBox } from "../lib/geo";
 import type { StreetStatus } from "../lib/mapStyle";
 import { recordAnswers } from "../lib/progress";
 import { MODE_INFO, type ModeProps, type RoundResult } from "./types";
@@ -75,12 +75,20 @@ export function PostcodeMode({
     [answered, correct, t, codes],
   );
 
-  // Before the answer: the street; afterwards: street and its postcode area(s).
+  // Before the answer: the street; afterwards: street and its postcode area(s), but at most
+  // ~2 km around the street so it stays visible for large areas (the sign names the code).
   const focus = useMemo<BBox>(() => {
     const street = streetsBBox([target], 400);
     if (!areas?.length) return street;
-    return unionBBox([street, ...areas.map((a) => geometryBBox(a.geometry))]);
-  }, [target, areas]);
+    const all = unionBBox([street, ...areas.map((a) => geometryBBox(a.geometry))]);
+    const cap = minSizeBBox([t.center[0], t.center[1], t.center[0], t.center[1]], 4000);
+    return [
+      Math.max(all[0], cap[0]),
+      Math.max(all[1], cap[1]),
+      Math.min(all[2], cap[2]),
+      Math.min(all[3], cap[3]),
+    ];
+  }, [target, areas, t]);
 
   const next = () => {
     if (index + 1 < ids.length) {

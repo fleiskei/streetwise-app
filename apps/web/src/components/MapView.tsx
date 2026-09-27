@@ -177,13 +177,15 @@ export function MapView({
       } as unknown as FeatureCollection);
     if (map.getSource("areas")) apply();
     else map.once("load", apply);
-    const labels = shownAreasRef.current.map((a) => {
+    // Big labels only for the overview (PLZ button); in quizzes the street sign names the code.
+    const labels = (areas ? [] : shownAreasRef.current).map((a) => {
       const el = document.createElement("div");
       el.className = MARKER_CLASS.plz + " pointer-events-none";
       el.textContent = a.properties.code;
       return new Marker({ element: el, anchor: "center" }).setLngLat(a.properties.label).addTo(map);
     });
     return () => labels.forEach((m) => m.remove());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areasKey, dark]);
 
   useEffect(() => {
@@ -419,7 +421,8 @@ export function MapView({
           map.setFeatureState({ source: "streets", id: f.id }, { status: s });
       }
     };
-    if (map.getSource("streets") && map.isStyleLoaded()) apply();
+    // isStyleLoaded() is false while tiles load (e.g. during a camera move); the source is enough.
+    if (map.getSource("streets")) apply();
     else map.once("load", apply);
   }, [status, data, dark]);
 
