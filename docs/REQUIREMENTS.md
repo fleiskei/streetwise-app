@@ -1,15 +1,15 @@
-# maptrain – Anforderungen
+# Streetwise – Anforderungen
 
 Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe**
 
-maptrain ist eine Web-App (PWA), mit der man die Straßennamen einer Stadt lernt. Sie zeigt eine Karte
+Streetwise ist eine Web-App (PWA), mit der man die Straßennamen einer Stadt lernt. Sie zeigt eine Karte
 ohne Beschriftung, und der Nutzer muss die Namen selbst zuordnen. Erste Stadt ist **Aachen**.
 
 ## 1. Entscheidungen aus der Anforderungsrunde
 
 | Thema | Entscheidung |
 |---|---|
-| Repository | `fleiskei/know-your-city`, App-Name „maptrain“ |
+| Repository | `fleiskei/streetwise`, App-Name „Streetwise“ |
 | Gebiet | Aachen, getrennt nach **Stadtbezirken** wählbar (Mitte, Brand, Eilendorf, Haaren, Kornelimünster/Walheim, Laurensberg, Richterich) |
 | Inhalte | **Straßen und Plätze** mit Namen (OSM) |
 | Nutzer | Ich bzw. ein kleiner Kreis, keine öffentliche Bestenliste |

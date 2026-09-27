@@ -1,4 +1,4 @@
-# maptrain – Umsetzungsplan
+# Streetwise – Umsetzungsplan
 
 Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
@@ -13,7 +13,7 @@ Stand: 2026-09-23 · Status: **Entwurf, wartet auf Freigabe** · Anforderungen: 
  │ IndexedDB │  │                                                             │
  │ SW-Cache  │──┼──▶ Pages Functions (Hono) /api/*  ──▶  D1 (SQLite)         │
  └───────────┘  │   ▲ geschützt durch Cloudflare Access (One-time PIN)       │
-                │   URL vorerst: https://maptrain.pages.dev                   │
+                │   URL vorerst: https://streetwise.pages.dev                 │
                 └─────────────────────────────────────────────────────────────┘
         Build-Zeit (GitHub Actions / lokal): OSM → Pipeline → GeoJSON + Tiles
 ```
@@ -127,7 +127,7 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 
 | # | Meilenstein | Ergebnis | Aufwand* |
 |---|---|---|---|
-| M0 | Grundgerüst | Monorepo, Lint/Format/Test, CI, leere App + `/api/me` auf `maptrain.pages.dev`, Access auf `/api/*`, **Login-Test auf dem iPhone als PWA** | S |
+| M0 | Grundgerüst | Monorepo, Lint/Format/Test, CI, leere App + `/api/me` auf `streetwise.pages.dev`, Access auf `/api/*`, **Login-Test auf dem iPhone als PWA** | S |
 | M1 | Daten & Karte | Pipeline für Aachen, label-freie Tiles, eigener Style, Straßen-Layer sichtbar, Bezirkswahl | L |
 | M2 | Spielmodi | M1–M4 lokal spielbar inkl. Autocomplete, Rundenergebnis, Sound/Haptik | L |
 | M3 | Lernlogik | Leitner, Levels, Freischaltung, Sterne, „Wiederholen“, lokal persistiert | M |
@@ -151,10 +151,10 @@ bevor Backend und Offline dazukommen.
 ## 9. Einrichtung durch dich (einmalig)
 Hosting und Login laufen wie bei spltrainer unter `*.pages.dev` mit Cloudflare Access. Eine eigene Domain ist vorerst nicht nötig.
 
-1. **Pages-Projekt** `maptrain` anlegen (Direct Upload, der Workflow deployt).
-2. **D1-Datenbank** `maptrain` anlegen und im Pages-Projekt als Binding `DB` eintragen.
+1. **Pages-Projekt** `streetwise` anlegen (Direct Upload, der Workflow deployt).
+2. **D1-Datenbank** `streetwise` anlegen und im Pages-Projekt als Binding `DB` eintragen.
    Die IDs trage ich in `wrangler.toml` ein, sobald du sie mir nennst.
-3. **Zero Trust → Access → Applications → Self-hosted**: Domain `maptrain.pages.dev`, **Pfad `api`**, Policy „Allow“ für
+3. **Zero Trust → Access → Applications → Self-hosted**: Domain `streetwise.pages.dev`, **Pfad `api`**, Policy „Allow“ für
    deine E-Mail-Adresse(n), Identity „One-time PIN“, Session-Dauer z. B. 1 Monat. Das **Application Audience (AUD) Tag**
    und den Team-Namen brauche ich als Env-Variablen.
 4. **GitHub-Secrets** `CLOUDFLARE_API_TOKEN` (Rechte: Pages Edit, D1 Edit) und `CLOUDFLARE_ACCOUNT_ID`.

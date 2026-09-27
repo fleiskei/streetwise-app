@@ -1,4 +1,4 @@
-# know-your-city · maptrain
+# Streetwise
 
 Interaktives Quiz zum Lernen der Straßennamen deiner Stadt (zuerst: Aachen).
 Die Karte zeigt keine Beschriftung, die Namen kommen von dir: per Multiple Choice, per Zuordnung
