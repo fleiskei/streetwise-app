@@ -6,21 +6,25 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Capabilities
+      - name: TileMatrixSet EPSG_3857_16
         run: |
-          for s in wmts_nw_dop wmts_nw_dop40 wmts_nw_dop_overlay; do
-            echo "=== $s"
-            curl -sS -m 60 "https://www.wmts.nrw.de/geobasis/$s/1.0.0/WMTSCapabilities.xml" -o cap_$s.xml -w "HTTP %{http_code} %{size_download}B\n" || true
-            grep -oE "<ows:Identifier>[^<]*</ows:Identifier>" cap_$s.xml | sort -u | head -40
-            grep -oE "<ResourceURL[^>]*>" cap_$s.xml | head -5
-            grep -oE "<ows:(Fees|AccessConstraints)>[^<]*" cap_$s.xml | head -4
-            grep -oE "<Format>[^<]*" cap_$s.xml | sort -u
-          done
-      - name: Sample tile + CORS
+          curl -sS -m 60 "https://www.wmts.nrw.de/geobasis/wmts_nw_dop/1.0.0/WMTSCapabilities.xml" -o cap.xml
+          python3 - <<'PY'
+          import re
+          s = open("cap.xml").read()
+          i = s.find("<ows:Identifier>EPSG_3857_16</ows:Identifier>")
+          block = s[i:s.find("</TileMatrixSet>", i)]
+          for m in re.finditer(r"<TileMatrix>(.*?)</TileMatrix>", block, re.S):
+              t = m.group(1)
+              g = lambda k: (re.search(rf"<(?:ows:)?{k}>([^<]*)<", t) or [None, None])[1]
+              print(g("Identifier"), g("ScaleDenominator"), g("TopLeftCorner"), g("MatrixWidth"), g("MatrixHeight"), g("TileWidth"))
+          j = s.find("<Layer>")
+          print(re.findall(r"<TileMatrixSetLink>.*?</TileMatrixSetLink>", s[j:], re.S)[:2])
+          print(re.findall(r"<ows:WGS84BoundingBox>.*?</ows:WGS84BoundingBox>", s, re.S)[:1])
+          PY
+      - name: Sample tiles (Aachen Dom)
         run: |
-          # Aachen Dom at z16 in WebMercator: x=33871 y=22006 (approx)
-          for s in wmts_nw_dop; do
-            url=$(grep -oE 'template="[^"]*"' cap_$s.xml | head -1 | sed 's/template="//;s/"$//')
-            echo "template: $url"
+          B=https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16
+          for t in "16/33875/22004" "14/8468/5501" "12/33875/22004" "10/8468/5501" "18/135502/88019"; do
+            curl -sS -o /dev/null -w "$t -> %{http_code} %{content_type} %{size_download}B\n" "$B/$t"
           done
-          curl -sS -I -H "Origin: https://streetwise.pages.dev" "https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/16/33871/22006.jpeg" | head -20 || true
