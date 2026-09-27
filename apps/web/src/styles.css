@@ -92,3 +92,68 @@ body {
 .animate-pop {
   animation: pop 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
+
+.map-badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #1e40af;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  border: 2.5px solid #fff;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+}
+.map-badge.tone-active {
+  background: #f59e0b;
+  transform: scale(1.15);
+}
+.map-badge.tone-correct {
+  background: #16a34a;
+}
+.map-badge.tone-wrong {
+  background: #dc2626;
+}
+.map-note {
+  background: #dc2626;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.25);
+  white-space: nowrap;
+}
+.street-sign.tone-wrong {
+  background: #b91c1c;
+  outline-color: #b91c1c;
+}
+.street-sign.tone-correct {
+  background: #15803d;
+  outline-color: #15803d;
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(3px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-6px);
+  }
+  40%,
+  60% {
+    transform: translateX(6px);
+  }
+}
+.animate-shake {
+  animation: shake 0.45s both;
+}

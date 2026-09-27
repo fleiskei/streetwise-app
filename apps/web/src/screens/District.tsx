@@ -1,10 +1,11 @@
 import { districtStatus } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
-import { loadProgress } from "../lib/progress";
+import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { Centered, LockIcon, ProgressBar, Screen, Stars, TopBar } from "../components/ui";
 
 export function DistrictScreen({ data, districtId }: { data: CityData; districtId: string }) {
+  const progress = useProgress();
   const district = data.levels.districts.find((d) => d.id === districtId);
   if (!district)
     return (
@@ -12,7 +13,7 @@ export function DistrictScreen({ data, districtId }: { data: CityData; districtI
         <TopBar title="Unbekannter Bezirk" back={href({ name: "home" })} />
       </Screen>
     );
-  const status = districtStatus(district, loadProgress());
+  const status = districtStatus(district, progress.streets, new Set(progress.perfectLevels));
 
   return (
     <Screen>
@@ -42,7 +43,7 @@ export function DistrictScreen({ data, districtId }: { data: CityData; districtI
                 {s.unlocked ? i + 1 : <LockIcon className="h-4 w-4" />}
               </span>
               <a
-                href={s.unlocked ? href({ name: "explore", levelId: level.id }) : undefined}
+                href={s.unlocked ? href({ name: "level", levelId: level.id }) : undefined}
                 aria-disabled={!s.unlocked}
                 className={`block rounded-2xl border border-[var(--line)] bg-[var(--surface-solid)] p-4 transition-transform ${s.unlocked ? "active:scale-[0.99]" : "opacity-60"}`}
               >

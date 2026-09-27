@@ -30,17 +30,37 @@ import { useDarkMode } from "../lib/useDarkMode";
 
 setWorkerUrl(workerUrl);
 
+export interface MapMarker {
+  key: string;
+  at: LonLat;
+  text: string;
+  /** "sign": street-name sign; "badge": round number badge; "note": small info chip. */
+  variant: "sign" | "badge" | "note";
+  tone?: "default" | "active" | "correct" | "wrong";
+  onClick?: () => void;
+}
+
+export interface MapTap {
+  at: LonLat;
+  /** Nearest drawn street within the tap tolerance, if any. */
+  street: StreetFeature | null;
+  /** Tap tolerance in metres at the current zoom. */
+  tolerance: number;
+}
+
 export interface MapViewProps {
   data: CityData;
-  /** Streets that take part (highlighted and tappable). */
+  /** Streets drawn on top of the base map (and tappable). */
   streetIds: string[];
   status?: Record<string, StreetStatus>;
-  focus: BBox;
+  /** Area the map is restricted to (initial view and pan limits). */
+  area: BBox;
+  /** Optional camera target inside the area; the map flies there when it changes. */
+  focus?: BBox | null;
   outline?: LonLat[][][];
-  onStreetTap?: (street: StreetFeature | null, at: LonLat) => void;
-  /** A street-sign label shown on the map, e.g. the revealed name. */
-  label?: { at: LonLat; text: string } | null;
-  /** Screen space covered by overlays (header, bottom sheet), kept free when fitting the area. */
+  onTap?: (tap: MapTap) => void;
+  markers?: MapMarker[];
+  /** Screen space covered by overlays (header, bottom sheet), kept free when fitting. */
   padding?: { top: number; bottom: number; left: number; right: number };
   /** Show MapLibre's attribution control; pass false when the screen shows attribution itself. */
   attribution?: boolean;
@@ -48,34 +68,68 @@ export interface MapViewProps {
 
 const DEFAULT_PADDING = { top: 40, bottom: 40, left: 24, right: 24 };
 
-const statusExpr = (prop: "color" | "width") =>
-  prop === "color"
-    ? ([
-        "match",
-        ["coalesce", ["feature-state", "status"], "idle"],
-        ...Object.entries(STATUS_COLORS).flat(),
-        STATUS_COLORS.idle,
-      ] as unknown as ExpressionSpecification)
-    : (["interpolate", ["linear"], ["zoom"], 12, 2.5, 15, 5, 18, 12] as ExpressionSpecification);
+const colorExpr = [
+  "match",
+  ["coalesce", ["feature-state", "status"], "idle"],
+  ...Object.entries(STATUS_COLORS).flat(),
+  STATUS_COLORS.idle,
+] as unknown as ExpressionSpecification;
+
+// Zoom must be the top-level interpolation input; the status factor goes into each stop.
+const statusFactor = [
+  "match",
+  ["coalesce", ["feature-state", "status"], "idle"],
+  "active",
+  1.6,
+  "muted",
+  0.7,
+  1,
+];
+const widthExpr = (base: [number, number, number]) =>
+  [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    12,
+    ["*", base[0], statusFactor],
+    15,
+    ["*", base[1], statusFactor],
+    18,
+    ["*", base[2], statusFactor],
+  ] as unknown as ExpressionSpecification;
+
+const inFilter = (geom: "LineString" | "Polygon", ids: string[]) =>
+  [
+    "all",
+    ["==", ["geometry-type"], geom],
+    ["in", ["get", "id"], ["literal", ids]],
+  ] as unknown as ExpressionSpecification;
+
+const MARKER_CLASS: Record<MapMarker["variant"], string> = {
+  sign: "street-sign animate-pop px-3 py-1.5 text-[15px] whitespace-nowrap",
+  badge: "map-badge animate-pop",
+  note: "map-note animate-pop",
+};
 
 export function MapView({
   data,
   streetIds,
   status,
+  area,
   focus,
   outline,
-  onStreetTap,
-  label,
+  onTap,
+  markers,
   padding = DEFAULT_PADDING,
   attribution = true,
 }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const dark = useDarkMode();
-  const tapRef = useRef(onStreetTap);
+  const tapRef = useRef(onTap);
   const idsRef = useRef(streetIds);
   useLayoutEffect(() => {
-    tapRef.current = onStreetTap;
+    tapRef.current = onTap;
     idsRef.current = streetIds;
   });
 
@@ -89,9 +143,9 @@ export function MapView({
         hasTiles: data.hasTiles,
         attribution: data.meta.attribution,
       }),
-      bounds: focus,
-      fitBoundsOptions: { padding },
-      maxBounds: padBounds(focus),
+      bounds: focus ?? area,
+      fitBoundsOptions: { padding, maxZoom: 17 },
+      maxBounds: padBounds(area),
       attributionControl: attribution
         ? { compact: true, customAttribution: data.meta.attribution }
         : false,
@@ -131,39 +185,36 @@ export function MapView({
         id: "squares",
         type: "fill",
         source: "streets",
-        filter: [
-          "all",
-          ["==", ["geometry-type"], "Polygon"],
-          ["in", ["get", "id"], ["literal", idsRef.current]],
-        ],
-        paint: { "fill-color": statusExpr("color"), "fill-opacity": 0.45 },
+        filter: inFilter("Polygon", idsRef.current),
+        paint: {
+          "fill-color": colorExpr,
+          "fill-opacity": [
+            "match",
+            ["coalesce", ["feature-state", "status"], "idle"],
+            "muted",
+            0.25,
+            0.5,
+          ],
+        },
       });
       map.addLayer({
         id: "streets-casing",
         type: "line",
         source: "streets",
-        filter: [
-          "all",
-          ["==", ["geometry-type"], "LineString"],
-          ["in", ["get", "id"], ["literal", idsRef.current]],
-        ],
+        filter: inFilter("LineString", idsRef.current),
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": dark ? "#0b1220" : "#ffffff",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 12, 4.5, 15, 8, 18, 16],
+          "line-width": widthExpr([4.5, 8, 16]),
         },
       });
       map.addLayer({
         id: "streets",
         type: "line",
         source: "streets",
-        filter: [
-          "all",
-          ["==", ["geometry-type"], "LineString"],
-          ["in", ["get", "id"], ["literal", idsRef.current]],
-        ],
+        filter: inFilter("LineString", idsRef.current),
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": statusExpr("color"), "line-width": statusExpr("width") },
+        paint: { "line-color": colorExpr, "line-width": widthExpr([2.5, 5, 12]) },
       });
     });
 
@@ -191,36 +242,31 @@ export function MapView({
           best = street;
         }
       }
-      cb(bestD <= tolerance ? best : null, at);
+      cb({ at, street: bestD <= tolerance ? best : null, tolerance });
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-    // focus/outline changes are handled below; recreate only for theme or data changes.
+    // area/focus/outline changes are handled below; recreate only for theme or data changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, dark]);
 
-  // Update participating streets.
+  // Update drawn streets.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
-      for (const id of ["squares", "streets-casing", "streets"]) {
-        const geom = id === "squares" ? "Polygon" : "LineString";
-        map.setFilter(id, [
-          "all",
-          ["==", ["geometry-type"], geom],
-          ["in", ["get", "id"], ["literal", streetIds]],
-        ]);
-      }
+      map.setFilter("squares", inFilter("Polygon", streetIds));
+      map.setFilter("streets-casing", inFilter("LineString", streetIds));
+      map.setFilter("streets", inFilter("LineString", streetIds));
     };
     if (map.getLayer("streets")) apply();
     else map.once("load", apply);
-  }, [streetIds]);
+  }, [streetIds, dark]);
 
-  // Update per-street status via feature-state.
+  // Per-street status via feature-state.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -234,34 +280,53 @@ export function MapView({
     };
     if (map.getSource("streets") && map.isStyleLoaded()) apply();
     else map.once("load", apply);
-  }, [status, data]);
+  }, [status, data, dark]);
 
-  // Refocus when the area changes.
+  // Area changes: new limits, dimming and view.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setMaxBounds(padBounds(focus));
-    map.fitBounds(focus, { padding, duration: 600 });
-    const src = map.getSource("mask") as GeoJSONSource | undefined;
-    src?.setData(maskPolygon(outline ?? []));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, outline]);
+    map.setMaxBounds(padBounds(area));
+    (map.getSource("mask") as GeoJSONSource | undefined)?.setData(maskPolygon(outline ?? []));
+  }, [area, outline]);
 
-  // Street-sign label as an HTML marker (no glyphs needed, styled like a German street sign).
+  // Camera follows the focus (or the whole area).
+  const focusKey = JSON.stringify(focus ?? area);
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !label) return;
-    const el = document.createElement("div");
-    el.className =
-      "street-sign animate-pop px-3 py-1.5 text-[15px] whitespace-nowrap pointer-events-none";
-    el.textContent = label.text;
-    const marker = new Marker({ element: el, anchor: "bottom", offset: [0, -14] })
-      .setLngLat(label.at)
-      .addTo(map);
-    return () => {
-      marker.remove();
-    };
-  }, [label, dark]);
+    if (!map) return;
+    map.fitBounds(focus ?? area, { padding, duration: 700, maxZoom: 17 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
+
+  // HTML markers: street signs, number badges, notes (no glyphs needed).
+  const markersKey = JSON.stringify(
+    markers?.map((m) => [m.key, m.at, m.text, m.variant, m.tone]) ?? [],
+  );
+  const markersRef = useRef(markers);
+  useLayoutEffect(() => {
+    markersRef.current = markers;
+  });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const created = (markersRef.current ?? []).map((m) => {
+      const el = document.createElement(m.onClick ? "button" : "div");
+      el.className = `${MARKER_CLASS[m.variant]} ${m.tone ? `tone-${m.tone}` : ""} ${m.onClick ? "" : "pointer-events-none"}`;
+      el.textContent = m.text;
+      if (m.onClick) {
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          markersRef.current?.find((x) => x.key === m.key)?.onClick?.();
+        });
+      }
+      const anchor = m.variant === "sign" ? "bottom" : "center";
+      return new Marker({ element: el, anchor, offset: m.variant === "sign" ? [0, -14] : [0, 0] })
+        .setLngLat(m.at)
+        .addTo(map);
+    });
+    return () => created.forEach((mk) => mk.remove());
+  }, [markersKey, dark]);
 
   // MapLibre sets `position: relative` on its container, so it needs a sized wrapper.
   return (

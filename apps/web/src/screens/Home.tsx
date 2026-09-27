@@ -1,13 +1,13 @@
 import { districtStatus } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
-import { loadProgress } from "../lib/progress";
+import { useProgress } from "../lib/progress";
 import { href } from "../lib/router";
 import { Card, ProgressBar, Screen, TopBar } from "../components/ui";
 
 export function Home({ data }: { data: CityData }) {
-  const progress = loadProgress();
+  const progress = useProgress();
   const districts = data.levels.districts.map((d) => {
-    const status = districtStatus(d, progress);
+    const status = districtStatus(d, progress.streets, new Set(progress.perfectLevels));
     const total = status.reduce((s, l) => s + l.total, 0);
     const mastered = status.reduce((s, l) => s + l.mastered, 0);
     return { d, total, mastered, levels: status.length };
