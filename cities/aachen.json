@@ -14,5 +14,12 @@
     "Laurensberg",
     "Richterich"
   ],
-  "center": [6.0839, 50.7753]
+  "center": [6.0839, 50.7753],
+  "aerial": {
+    "tiles": "https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/{m}/{x}/{y}",
+    "matrixOffset": 5,
+    "minzoom": 5,
+    "maxzoom": 20,
+    "attribution": "Luftbild © Geobasis NRW (dl-de/zero-2.0)"
+  }
 }

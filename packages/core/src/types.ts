@@ -57,6 +57,18 @@ export interface District {
   levels: Level[];
 }
 
+/**
+ * Optional aerial imagery (REQUIREMENTS F-26), a WMTS in Web Mercator. `{m}` is the tile
+ * matrix id = zoom − matrixOffset (two digits), `{x}`/`{y}` column and row.
+ */
+export interface AerialSource {
+  tiles: string;
+  matrixOffset: number;
+  minzoom: number;
+  maxzoom: number;
+  attribution: string;
+}
+
 export interface CityMeta {
   id: string;
   name: string;
@@ -68,6 +80,7 @@ export interface CityMeta {
   streetCount: number;
   /** Increment when the data format changes incompatibly. */
   formatVersion: number;
+  aerial?: AerialSource;
 }
 
 export interface CityLevels {

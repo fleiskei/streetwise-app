@@ -48,4 +48,4 @@ Die Ergebnisse werden committet. Alternativ läuft beides in GitHub Actions:
 sobald der Workflow auf `main` liegt). Außerdem läuft er bei jedem Push, der `cities/**` ändert.
 Ohne Kacheln zeigt die App die Straßen selbst als Grundkarte.
 
-Kartendaten © OpenStreetMap-Mitwirkende (ODbL), Kacheln: Protomaps.
+Kartendaten © OpenStreetMap-Mitwirkende (ODbL), Kacheln: Protomaps, Luftbild: © Geobasis NRW (dl-de/zero-2.0).
