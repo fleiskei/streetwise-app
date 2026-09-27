@@ -33,8 +33,9 @@ export function continueLevel(
   data: CityData,
   progress: ProgressState,
 ): { level: Level; district: District } | null {
-  const last = progress.answers[progress.answers.length - 1];
-  const lastDistrict = last && data.streetsById.get(last.streetId)?.properties.district;
+  const lastDistrict = progress.lastStreetId
+    ? data.streetsById.get(progress.lastStreetId)?.properties.district
+    : undefined;
   const districts = [...data.levels.districts].sort(
     (a, b) => Number(b.id === lastDistrict) - Number(a.id === lastDistrict),
   );

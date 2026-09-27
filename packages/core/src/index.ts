@@ -7,3 +7,4 @@ export * from "./rng";
 export * from "./geo";
 export * from "./distractors";
 export * from "./round";
+export * from "./sync";

@@ -114,7 +114,7 @@ export function CityMap({
       }
       if (target) {
         const p = data.streetsById.get(target)!.properties;
-        const hinted = cityMap.hinted.includes(target);
+        const hinted = target in cityMap.hinted;
         m.push({
           key: `target-${target}-${hinted}`,
           at: p.center,

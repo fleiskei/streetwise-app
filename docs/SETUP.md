@@ -59,10 +59,11 @@ Danach deployt der Workflow `.github/workflows/deploy.yml` bei jedem Push:
 Bitte melde, ob das klappt – insbesondere, ob nach der Code-Eingabe die **installierte App** angemeldet ist
 (und nicht nur ein Safari-Fenster). Falls nicht, bauen wir den Fallback aus `docs/PLAN.md` Abschnitt 9.
 
-## 5. D1-Datenbank (ab Meilenstein M4)
+## 5. D1-Datenbank (M4, erledigt)
 
-```bash
-pnpm --filter @streetwise/web exec wrangler d1 create streetwise
-```
+Die Datenbank `streetwise` ist angelegt und in `apps/web/wrangler.toml` eingetragen. Die Migrationen in
+`apps/web/migrations` spielt der Deploy-Workflow automatisch ein (`wrangler d1 migrations apply --remote`).
+Dafür braucht `CLOUDFLARE_API_TOKEN` die Berechtigung **Account · D1 · Edit**.
 
-Die ausgegebene `database_id` kommt in `apps/web/wrangler.toml` (Block `[[d1_databases]]`).
+Lokal: `pnpm --filter @streetwise/web exec wrangler d1 migrations apply streetwise --local`, danach
+`pnpm build && pnpm --filter @streetwise/web dev:api` (mit `.dev.vars`, siehe `.dev.vars.example`).

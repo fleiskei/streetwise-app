@@ -9,8 +9,9 @@ compatibility_date = "2026-09-01"
 ACCESS_TEAM_DOMAIN = "noisy-recipe-2a1e.cloudflareaccess.com"
 ACCESS_AUD = "1a4cde40a9904d147c53f35f341e5db89b040fa7517f377eadbc8db53f1bcde4"
 
-# D1 binding follows in milestone M4 (progress sync):
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "streetwise"
-# database_id = "<id>"
+# Synced progress (M4). Migrations: apps/web/migrations, applied by the deploy workflow.
+[[d1_databases]]
+binding = "DB"
+database_name = "streetwise"
+database_id = "a182a8ff-5498-43cb-bf40-b6c3810427a4"
+migrations_dir = "migrations"

@@ -1,22 +1,22 @@
+import { mergeCityMap, type CityMapDoc } from "@streetwise/core";
 import { createStore, useStore } from "./store";
 
 /**
  * State of the city map ("Karte vervollständigen" without levels, REQUIREMENTS F-24). Kept
- * until the user resets it; synced to the server in M4.
+ * until the user resets it; merged with the server (M4) via mergeCityMap.
  */
-export interface CityMapState {
-  /** Streets entered, with time and whether a hint was used for them. */
-  found: Record<string, { at: number; hinted: boolean }>;
-  /** Streets revealed by a hint but not entered yet. */
-  hinted: string[];
-}
+export type CityMapState = CityMapDoc;
 
 export const cityMapStore = createStore<CityMapState>(
   "streetwise-citymap-v1",
-  { found: {}, hinted: [] },
+  { resetAt: null, found: {}, hinted: {} },
   (raw) => {
-    const r = raw as Partial<CityMapState>;
-    return { found: r.found ?? {}, hinted: r.hinted ?? [] };
+    const r = raw as Partial<CityMapState> & { hinted?: string[] | Record<string, number> };
+    // Earlier versions stored hints as a list of ids.
+    const hinted = Array.isArray(r.hinted)
+      ? Object.fromEntries(r.hinted.map((id) => [id, Date.now()]))
+      : (r.hinted ?? {});
+    return { resetAt: r.resetAt ?? null, found: r.found ?? {}, hinted };
   },
 );
 
@@ -26,23 +26,31 @@ export const useCityMap = () => useStore(cityMapStore);
 export function addFound(ids: string[]): string[] {
   const s = cityMapStore.get();
   const found = { ...s.found };
+  const hinted = { ...s.hinted };
   const counted: string[] = [];
   const at = Date.now();
   for (const id of ids) {
     if (found[id]) continue;
-    const hinted = s.hinted.includes(id);
-    found[id] = { at, hinted };
-    if (!hinted) counted.push(id);
+    const wasHinted = id in hinted;
+    found[id] = { at, hinted: wasHinted };
+    delete hinted[id];
+    if (!wasHinted) counted.push(id);
   }
-  cityMapStore.set({ found, hinted: s.hinted.filter((id) => !found[id]) });
+  cityMapStore.set({ ...s, found, hinted });
   return counted;
 }
 
 export function addHint(id: string) {
   const s = cityMapStore.get();
-  if (!s.hinted.includes(id)) cityMapStore.set({ ...s, hinted: [...s.hinted, id] });
+  if (!(id in s.hinted) && !s.found[id])
+    cityMapStore.set({ ...s, hinted: { ...s.hinted, [id]: Date.now() } });
 }
 
 export function resetCityMap() {
-  cityMapStore.set({ found: {}, hinted: [] });
+  cityMapStore.set({ resetAt: Date.now(), found: {}, hinted: {} });
+}
+
+/** Merges the server's city map into the local one (local changes made meanwhile survive). */
+export function applyServerCityMap(server: CityMapState) {
+  cityMapStore.set(mergeCityMap(cityMapStore.get(), server));
 }
