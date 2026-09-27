@@ -118,7 +118,9 @@ Unterschiede zu spltrainer:
 - Ist die Access-Session abgelaufen (Dauer einstellbar, z. B. 1 Monat), antwortet die API mit einem Redirect bzw. 401.
   Die App sammelt die Antworten dann weiter offline und zeigt „Erneut anmelden“.
 
-**Risiko:** Eine iOS-PWA im Standalone-Modus öffnet fremde Domains (hier `<team>.cloudflareaccess.com`) unter Umständen
+**Getestet (2026-09-27): funktioniert** – die vom Home-Bildschirm gestartete App ist nach dem Login angemeldet.
+
+~~**Risiko:**~~ Eine iOS-PWA im Standalone-Modus öffnet fremde Domains (hier `<team>.cloudflareaccess.com`) unter Umständen
 in einem eingebetteten Browser mit eigenem Cookie-Speicher. Das Cookie käme dann nicht in der PWA an. Das prüfen wir **früh
 in M0 mit einem Test auf dem iPhone**. Falls es nicht geht, bauen wir einen eigenen Login mit Code-Eingabe direkt in der PWA
 (Resend + eigene Domain, siehe `docs/PLAN.md` Abschnitt 9).

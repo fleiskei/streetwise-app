@@ -1,6 +1,6 @@
 # Streetwise – Umsetzungsplan
 
-Stand: 2026-09-27 · Status: **freigegeben, M0/M1 in Arbeit** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
+Stand: 2026-09-27 · Status: **freigegeben, M0/M1 fertig, weiter mit M2** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## 1. Architektur
 
@@ -139,10 +139,10 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 \* S ≈ ½ Tag, M ≈ 1–2 Tage, L ≈ 2–4 Tage Implementierungsarbeit
 
 **Stand 2026-09-27**
-- M0 Code fertig: Monorepo, CI, Deploy-Workflow, `/api/me` mit Access-JWT-Prüfung, Konto-Screen mit Login.
-  Offen: Cloudflare-Einrichtung (SETUP.md) und Login-Test auf dem iPhone.
-- M1 Code fertig: Datenpipeline, Tile-Extraktion, label-freier Style, Bezirke → Level-Pfad → Karte „Erkunden“
-  (Straße antippen zeigt den Namen). Offen: Aachen-Daten erzeugen (Workflow „Build city data“).
+- ✅ M0: Monorepo, CI, Deploy nach Cloudflare Pages, `/api/me` mit Access-JWT-Prüfung, Konto-Screen.
+  Login per Cloudflare Access funktioniert in der iOS-PWA (vom Home-Bildschirm gestartet) – kein Fallback nötig.
+- ✅ M1: Datenpipeline (1.515 Straßen/Plätze, 7 Bezirke, Levels wachsen vom Zentrum aus), label-freie Kacheln,
+  Bezirke → Level-Pfad → Karte „Erkunden“ (Straße antippen zeigt den Namen).
 
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.
