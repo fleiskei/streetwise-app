@@ -1,8 +1,13 @@
 name: Build city data
 
 # Regenerates street data (Overpass) and base-map tiles (Protomaps) and commits them
-# to the selected branch. Run manually from the Actions tab.
+# to the branch. Runs manually from the Actions tab (once this file is on the default
+# branch) and on every push that changes a city config or this workflow.
 on:
+  push:
+    paths:
+      - "cities/**"
+      - ".github/workflows/city-data.yml"
   workflow_dispatch:
     inputs:
       city:
@@ -12,6 +17,9 @@ on:
         description: Also (re)build the base-map tiles
         type: boolean
         default: true
+
+concurrency:
+  group: city-data-${{ github.ref }}
 
 jobs:
   build:
@@ -27,15 +35,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Street data
-        run: pnpm --filter @streetwise/data build-city "${{ inputs.city }}" --refresh
+        run: pnpm --filter @streetwise/data build-city "${{ inputs.city || 'aachen' }}" --refresh
       - name: Tiles
-        if: inputs.tiles
-        run: pnpm --filter @streetwise/tiles build-tiles "${{ inputs.city }}" --force
+        if: github.event_name == 'push' || inputs.tiles
+        run: pnpm --filter @streetwise/tiles build-tiles "${{ inputs.city || 'aachen' }}" --force
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add apps/web/public/data apps/web/public/tiles
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
-          git commit -m "data: rebuild ${{ inputs.city }} from OpenStreetMap"
+          git commit -m "data: rebuild ${{ inputs.city || 'aachen' }} from OpenStreetMap"
           git push

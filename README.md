@@ -44,7 +44,8 @@ pnpm tiles:aachen   # Kartenkacheln ohne Beschriftung für die Stadt (Protomaps-
 ```
 
 Die Ergebnisse werden committet. Alternativ läuft beides in GitHub Actions:
-**Actions → „Build city data“ → Run workflow** (committet auf den gewählten Branch).
+**Actions → „Build city data“ → Run workflow** (committet auf den gewählten Branch; manuell startbar,
+sobald der Workflow auf `main` liegt). Außerdem läuft er bei jedem Push, der `cities/**` ändert.
 Ohne Kacheln zeigt die App die Straßen selbst als Grundkarte.
 
 Kartendaten © OpenStreetMap-Mitwirkende (ODbL), Kacheln: Protomaps.
