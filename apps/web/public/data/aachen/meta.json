@@ -1,0 +1,19 @@
+{
+  "id": "aachen",
+  "name": "Aachen",
+  "center": [
+    6.0839,
+    50.7753
+  ],
+  "bounds": [
+    5.97482,
+    50.66214,
+    6.21811,
+    50.85724
+  ],
+  "generatedAt": "2026-09-27T11:40:16.699Z",
+  "osmTimestamp": "2026-06-01T08:52:28Z",
+  "attribution": "© OpenStreetMap-Mitwirkende (ODbL)",
+  "streetCount": 1515,
+  "formatVersion": 1
+}

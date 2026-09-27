@@ -1,0 +1,12 @@
+{
+  "source": "https://build.protomaps.com/20260927.pmtiles",
+  "bbox": [
+    5.9648200000000005,
+    50.65214,
+    6.22811,
+    50.867239999999995
+  ],
+  "minzoom": 0,
+  "maxzoom": 15,
+  "count": 1130
+}
