@@ -56,6 +56,14 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 - F-25 **Zoom:** Man kann bis auf das ganze Stadtgebiet herauszoomen.
 - F-26 **Luftbild:** Die Grundkarte lässt sich auf ein Luftbild umschalten (freie Quelle, nur online).
 
+- F-27 **Postleitzahlen (geplant, E4):** Ziel ist, die PLZ-Gebiete zu kennen. Modus **„PLZ zuordnen“**: markierte Straße,
+  4 PLZ zur Auswahl; jede PLZ, in der die Straße liegt, zählt als richtig; danach wird das PLZ-Gebiet eingeblendet.
+- F-28 Der PLZ-Wissensstand ist pro Straße getrennt vom Namen (eigene Leitner-Boxen) und läuft über dieselben Levels.
+  Die Level-Seite zeigt ihn als zweiten Balken, „Wiederholen“ fragt fällige PLZ mit ab. Levels werden weiter nur
+  über die Namen freigeschaltet.
+- F-29 Auf der Stadtkarte blendet ein Umschalter „PLZ“ die Gebietsgrenzen mit großen PLZ-Beschriftungen ein.
+- F-30 (später, E4b) „PLZ → Gebiet antippen“.
+
 ### 2.3 Lernlogik: Spaced Repetition + Levels
 - F-10 Für jede Straße speichert die App pro Nutzer einen Wissensstand nach dem **Leitner-System**:
   Box 0–5 mit den Intervallen 0 / 1 / 3 / 7 / 16 / 35 Tage.

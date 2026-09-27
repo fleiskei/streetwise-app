@@ -186,6 +186,23 @@ Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell
   ein Level, wenn alle seine Straßen in der Stadtkarte ohne Tipp gefunden wurden.
 - **Datenmodell** (lokal, in M4 synchronisiert): `cityMap: { found: Record<streetId, { at, hinted }> }`.
 
+## 7b. E4: Postleitzahlen (geplant, 2026-09-27)
+
+Ziel: die **PLZ-Gebiete** kennen. Einstieg ist die Spielform **Straße → PLZ (Auswahl)**; nach jeder Antwort wird das
+richtige Gebiet eingeblendet. „PLZ → Gebiet antippen“ folgt in einem zweiten Schritt (E4b).
+
+| # | Schritt | Ergebnis | Aufwand |
+|---|---|---|---|
+| E4.0 | Datenprüfung | CI-Probe: Wie vollständig sind die PLZ-Grenzen (`boundary=postal_code`) für Aachen in OSM? Decken sie das Stadtgebiet lückenlos ab? | S |
+| E4.1 | Pipeline | `postcodes.geojson` (Code, vereinfachte Fläche, Beschriftungspunkt). Jede Straße bekommt `postcodes: string[]`, bestimmt über den Längenanteil in den Gebieten (≥ 5 %), sortiert nach Anteil. Plausibilitätsbericht: Straßen ohne PLZ, Straßen mit mehreren PLZ. | M |
+| E4.2 | Lernlogik | Eigener Wissensstand pro Straße unter dem Schlüssel `plz:<streetId>` mit derselben Leitner-Logik und neuem Modus `postcode` (+½ Box wie Multiple Choice). Antworten laufen über denselben Sync, **ohne Schemaänderung**. Levels werden weiter nur über die Namen freigeschaltet. | S |
+| E4.3 | Modus „PLZ zuordnen“ | Die Straße ist markiert, dazu 4 PLZ. Die falschen Antworten kommen aus benachbarten Gebieten, nie eine PLZ, in der die Straße liegt. **Jede PLZ, in der die Straße liegt, zählt als richtig.** Danach werden Gebietsgrenze und PLZ eingeblendet. | M |
+| E4.4 | Einbindung | Level-Seite: Karte „PLZ zuordnen“ und ein zweiter Balken „PLZ gemeistert“. „Wiederholen“ fragt fällige PLZ mit ab. | S |
+| E4.5 | Anzeige | Umschalter „PLZ“ neben dem Luftbild-Schalter (Stadtkarte/Erkunden): Gebietsgrenzen und große PLZ-Beschriftungen, die Einstellung wird gespeichert. | S |
+
+Quelle: OSM (ODbL, wie die Straßen). Fallback, falls Grenzen fehlen: `addr:postcode` der Adressen entlang der Straße
+(E4.0 entscheidet).
+
 ## 8. Tests & Qualität
 - Vitest für `packages/core` (Normalisierung, Autocomplete-Ranking, Leitner, Level-Freischaltung, Distraktoren, Treffer-Distanz)
 - Functions-Tests mit `@cloudflare/vitest-pool-workers` (JWT-Prüfung, idempotente Answers)
