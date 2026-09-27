@@ -155,6 +155,32 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.
 
+## 7a. Erweiterungen nach Test-Feedback (2026-09-27)
+
+Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell für den Sync feststeht.
+
+| # | Erweiterung | Ergebnis | Aufwand |
+|---|---|---|---|
+| E1 | **Weiter rauszoomen** | Die Pan- und Zoomgrenze ist das Stadtgebiet plus Rand statt Level plus Rand. Die Level-Ansicht bleibt als Startausschnitt. | S |
+| E2 | **Stadtkarte** (Erkunden und Vervollständigen ohne Level) | siehe unten | L |
+| E3 | **Satellitenbild** | Umschalter Karte/Luftbild. Quelle sind die NRW-Luftbilder (DOP, Geobasis NRW, Lizenz dl-de/zero-2.0), nur online. Straßen-Overlay und Schilder bleiben. Endpoint und CORS werden geprüft; falls nötig, laufen die Anfragen über eine Pages Function mit Cache. | M |
+
+### E2 Stadtkarte
+- **Ein durchgehender Stand für die ganze Stadt**, frei zoombar. Einstieg über eine eigene Karte auf der Startseite
+  („Stadtkarte“) mit den Modi *Erkunden* und *Vervollständigen*.
+- **Bezirksfilter** (Chips): zoomt auf den Bezirk, dimmt den Rest ab und zeigt den Zähler des Bezirks. Ohne Filter gilt
+  der Zähler für die ganze Stadt („x von 1.516“), dazu ein Blatt mit dem Stand pro Bezirk.
+- **Vervollständigen:** Autocomplete aus allen Namen der Stadt. Ein Treffer färbt alle Straßen dieses Namens im aktuellen
+  Filter ein, ohne Filter in der ganzen Stadt. Der **Stand bleibt gespeichert**, bis man ihn mit **Reset** (mit
+  Bestätigung) zurücksetzt.
+- **Tipp statt Aufgeben:** Der Tipp markiert eine noch fehlende Straße nahe der Kartenmitte und zeigt die ersten
+  Buchstaben. Wird diese Straße danach eingetragen, zählt sie nicht als richtig für den Lernstand.
+- **Lernstand:** Jede neu eingetragene Straße zählt als richtige Antwort im Modus „vervollständigen“ (+2 Boxen).
+  Reset löscht nur die Karte, nicht den Lernstand.
+- **Level-Seite:** „Erkunden“ und „Vervollständigen“ öffnen die Stadtkarte auf den Ausschnitt des Levels. ★★★ bekommt
+  ein Level, wenn alle seine Straßen in der Stadtkarte ohne Tipp gefunden wurden.
+- **Datenmodell** (lokal, in M4 synchronisiert): `cityMap: { found: Record<streetId, { at, hinted }> }`.
+
 ## 8. Tests & Qualität
 - Vitest für `packages/core` (Normalisierung, Autocomplete-Ranking, Leitner, Level-Freischaltung, Distraktoren, Treffer-Distanz)
 - Functions-Tests mit `@cloudflare/vitest-pool-workers` (JWT-Prüfung, idempotente Answers)
