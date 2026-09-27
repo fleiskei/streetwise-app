@@ -58,6 +58,9 @@ export function CityMap({
   const [view, setView] = useState<BBox | null>(initial.view);
   const [selected, setSelected] = useState<{ id: string; at: LonLat } | null>(null);
   const [shown, setShown] = useState<string | null>(null);
+  /** Street selected in "complete" mode whose name is asked. */
+  const [target, setTarget] = useState<string | null>(null);
+  const wrongOnce = useRef(false);
   const [text, setText] = useState("");
   const [message, setMessage] = useState<Message>(null);
   const [overview, setOverview] = useState(false);
@@ -89,10 +92,10 @@ export function CityMap({
   const status = useMemo(() => {
     const s: Record<string, StreetStatus> = {};
     for (const id of Object.keys(cityMap.found)) s[id] = "correct";
-    if (mode === "complete") for (const id of cityMap.hinted) s[id] = "active";
+    if (mode === "complete" && target) s[target] = "active";
     if (mode === "explore" && selected) s[selected.id] = "active";
     return s;
-  }, [cityMap, mode, selected]);
+  }, [cityMap, mode, selected, target]);
 
   const markers = useMemo<MapMarker[]>(() => {
     const m: MapMarker[] = [];
@@ -109,23 +112,26 @@ export function CityMap({
           tone: "correct",
         });
       }
-      for (const id of cityMap.hinted) {
-        const p = data.streetsById.get(id)!.properties;
+      if (target) {
+        const p = data.streetsById.get(target)!.properties;
+        const hinted = cityMap.hinted.includes(target);
         m.push({
-          key: `hint-${id}`,
+          key: `target-${target}-${hinted}`,
           at: p.center,
-          text: `${p.name.slice(0, 3)}…`,
-          variant: "note",
+          text: hinted ? `${p.name.slice(0, 3)}…` : "?",
+          variant: hinted ? "note" : "badge",
+          tone: "active",
         });
       }
     }
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, selected, shown, cityMap, data]);
+  }, [mode, selected, shown, target, cityMap, data]);
 
   const setMode = (m: CityMode) => {
     setMessage(null);
     setSelected(null);
+    setTarget(null);
     // Same component instance (key="city" in App): camera and filter stay as they are.
     window.location.replace(href({ name: "city", mode: m, focus }));
   };
@@ -133,11 +139,12 @@ export function CityMap({
   const chooseDistrict = (id: string | null) => {
     setDistrict(id);
     setOverview(false);
+    setTarget(null);
     const d = id ? data.levels.districts.find((x) => x.id === id) : undefined;
     setView(d ? d.bounds : data.meta.bounds);
   };
 
-  const flyToIfHidden = (ids: string[]) => {
+  const flyToIfHidden = (ids: string[], minMeters = 500) => {
     const [w, s, e, n] = visible.current;
     const inView = ids.some((id) => {
       const [x, y] = data.streetsById.get(id)!.properties.center;
@@ -147,61 +154,78 @@ export function CityMap({
       setView(
         streetsBBox(
           ids.map((id) => data.streetsById.get(id)!),
-          500,
+          minMeters,
         ),
       );
   };
 
+  /** Nearest street in scope that is still missing (optionally excluding one). */
+  const nearestMissing = (from: LonLat, exclude?: string): string | null => {
+    let best: string | null = null;
+    let bestD = Infinity;
+    for (const id of scopeIds) {
+      if (id === exclude || cityMap.found[id]) continue;
+      const d = haversine(from, data.streetsById.get(id)!.properties.center);
+      if (d < bestD) {
+        bestD = d;
+        best = id;
+      }
+    }
+    return best;
+  };
+
+  const selectTarget = (id: string | null) => {
+    setTarget(id);
+    wrongOnce.current = false;
+    if (id) inputRef.current?.focus();
+  };
+
+  /** Checks the typed name against the selected street. */
   const submit = (value: string) => {
     const v = value.trim();
     if (!v) return;
-    const hits = scopeIds.filter((id) => matchesName(v, name(id)));
-    const fresh = hits.filter((id) => !cityMap.found[id]);
-    if (fresh.length) {
-      const counted = addFound(fresh);
+    if (!target) {
+      setMessage({ tone: "info", text: "Tippe zuerst eine graue Straße auf der Karte an." });
+      return;
+    }
+    if (matchesName(v, name(target))) {
+      const counted = addFound([target]);
       recordAnswers(
         counted.map((id) => ({ streetId: id, mode: "complete" as const, correct: true })),
       );
       feedback.correct();
-      setShown(fresh[0]!);
-      flyToIfHidden(fresh);
-      setMessage({
-        tone: "ok",
-        text: `${name(fresh[0]!)} ✓${fresh.length > 1 ? ` (${fresh.length}×)` : ""}`,
-      });
-    } else if (hits.length) {
-      setMessage({ tone: "info", text: "Schon eingetragen." });
-    } else if (cityNorms.has(normalizeName(v))) {
-      feedback.wrong();
-      setMessage({
-        tone: "bad",
-        text: districtObj ? `Liegt nicht in ${districtObj.name}.` : "Nicht in den Kartendaten.",
-      });
+      setShown(target);
+      setMessage({ tone: "ok", text: `${name(target)} ✓` });
+      // Keep the flow going: continue with the nearest missing street.
+      const next = nearestMissing(data.streetsById.get(target)!.properties.center, target);
+      selectTarget(next);
+      if (next) flyToIfHidden([next], 400);
     } else {
       feedback.wrong();
-      setMessage({ tone: "bad", text: "Unbekannter Straßenname." });
+      if (!wrongOnce.current) {
+        wrongOnce.current = true;
+        recordAnswers([{ streetId: target, mode: "complete", correct: false }]);
+      }
+      setMessage({
+        tone: "bad",
+        text: cityNorms.has(normalizeName(v))
+          ? "Nicht richtig – versuch's nochmal oder nimm einen Tipp."
+          : "Unbekannter Straßenname.",
+      });
     }
     setText("");
     inputRef.current?.focus();
   };
 
   const hint = () => {
-    const open = scopeIds.filter((id) => !cityMap.found[id] && !cityMap.hinted.includes(id));
-    if (!open.length) return;
-    let best = open[0]!;
-    let bestD = Infinity;
-    for (const id of open) {
-      const d = haversine(center.current, data.streetsById.get(id)!.properties.center);
-      if (d < bestD) {
-        bestD = d;
-        best = id;
-      }
-    }
-    addHint(best);
-    setView(streetsBBox([data.streetsById.get(best)!], 600));
+    const id = target ?? nearestMissing(center.current);
+    if (!id) return;
+    addHint(id);
+    selectTarget(id);
+    if (!target) setView(streetsBBox([data.streetsById.get(id)!], 600));
     setMessage({
       tone: "info",
-      text: `Tipp: beginnt mit „${name(best).slice(0, 3)}…“ (zählt nicht für den Lernstand)`,
+      text: `Tipp: beginnt mit „${name(id).slice(0, 3)}…“ (zählt nicht für den Lernstand)`,
     });
   };
 
@@ -214,22 +238,32 @@ export function CityMap({
       return;
     resetCityMap();
     setShown(null);
+    selectTarget(null);
     setMessage({ tone: "info", text: "Stadtkarte zurückgesetzt." });
   };
 
   const onTap = (tap: MapTap) => {
-    if (mode === "explore")
-      setSelected(tap.street ? { id: tap.street.properties.id, at: tap.at } : null);
-    else if (tap.street && cityMap.found[tap.street.properties.id])
-      setShown(tap.street.properties.id);
+    const id = tap.street?.properties.id ?? null;
+    if (mode === "explore") {
+      setSelected(id ? { id, at: tap.at } : null);
+      return;
+    }
+    if (!id) return;
+    if (cityMap.found[id]) {
+      setShown(id);
+      return;
+    }
+    feedback.tap();
+    setMessage(null);
+    selectTarget(id);
   };
 
   const suggestions = useMemo(
     () =>
-      mode === "complete"
+      mode === "complete" && target
         ? suggest(text, index, { minChars: settings.autocompleteMinChars, limit: 5 })
         : [],
-    [mode, text, index, settings.autocompleteMinChars],
+    [mode, target, text, index, settings.autocompleteMinChars],
   );
 
   const chips = (
@@ -346,16 +380,21 @@ export function CityMap({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  districtObj ? `Straße in ${districtObj.name} …` : "Straßenname eingeben …"
+                  target ? "Name der markierten Straße …" : "Erst eine graue Straße antippen"
                 }
+                disabled={!target}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="words"
                 spellCheck={false}
                 enterKeyHint="done"
-                className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-3 text-[16px] outline-none focus:border-brand"
+                className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-3 text-[16px] outline-none focus:border-brand disabled:opacity-60"
               />
-              <button type="submit" className="rounded-xl bg-brand px-4 font-semibold text-white">
+              <button
+                type="submit"
+                disabled={!target}
+                className="rounded-xl bg-brand px-4 font-semibold text-white disabled:opacity-40"
+              >
                 OK
               </button>
             </form>
