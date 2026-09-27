@@ -1,4 +1,4 @@
-import type { Mode } from "@streetwise/core";
+import { isPostcodeKey, streetIdOfKey, type Mode } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { MODE_INFO, type RoundResult } from "./types";
 
@@ -98,7 +98,9 @@ export function RoundSummary({
             <div className="flex flex-wrap gap-2">
               {wrong.map((r) => (
                 <span key={r.streetId} className="street-sign px-2.5 py-1 text-sm">
-                  {data.streetsById.get(r.streetId)?.properties.name}
+                  {data.streetsById.get(streetIdOfKey(r.streetId))?.properties.name}
+                  {(mode === "postcode" || isPostcodeKey(r.streetId)) &&
+                    ` · ${data.streetsById.get(streetIdOfKey(r.streetId))?.properties.postcodes?.join(" / ") ?? ""}`}
                 </span>
               ))}
             </div>

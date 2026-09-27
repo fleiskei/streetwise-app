@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { dueStreetIds, nextDueAt } from "@streetwise/core";
+import { dueStreetIds, isPostcodeKey, nextDueAt, streetIdOfKey } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { feedback } from "../lib/feedback";
 import { newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
@@ -7,6 +7,7 @@ import { progressStore } from "../lib/progress";
 import { href } from "../lib/router";
 import { ChoiceMode } from "../modes/ChoiceMode";
 import { LocateMode } from "../modes/LocateMode";
+import { PostcodeMode } from "../modes/PostcodeMode";
 import { RoundSummary } from "../modes/RoundSummary";
 import type { RoundResult } from "../modes/types";
 import { Centered, Screen, TopBar } from "../components/ui";
@@ -25,8 +26,12 @@ type Phase =
 export function Review({ data }: { data: CityData }) {
   const start = (round: number, ids?: string[]): Phase => ({
     kind: "play",
-    ids: (ids ?? dueStreetIds(progressStore.get().streets, Date.now(), REVIEW_SIZE)).filter((id) =>
-      data.streetsById.has(id),
+    ids: (ids ?? dueStreetIds(progressStore.get().streets, Date.now(), REVIEW_SIZE)).filter(
+      (key) => {
+        // keys are street ids or "plz:<street id>" (postcode knowledge)
+        const street = data.streetsById.get(streetIdOfKey(key));
+        return !!street && (!isPostcodeKey(key) || !!street.properties.postcodes?.length);
+      },
     ),
     round,
     unlockedBefore: unlockedLevelIds(data, progressStore.get()),
@@ -92,11 +97,12 @@ export function Review({ data }: { data: CityData }) {
     );
   }
 
-  const id = phase.ids[index]!;
+  const key = phase.ids[index]!;
+  const id = streetIdOfKey(key);
   const street = data.streetsById.get(id)!;
   const ctx = data.levelById.get(street.properties.level)!;
-  const weak = (progressStore.get().streets[id]?.box ?? 0) < 2;
-  const Mode = weak ? ChoiceMode : LocateMode;
+  const weak = (progressStore.get().streets[key]?.box ?? 0) < 2;
+  const Mode = isPostcodeKey(key) ? PostcodeMode : weak ? ChoiceMode : LocateMode;
 
   return (
     <Mode
@@ -108,7 +114,8 @@ export function Review({ data }: { data: CityData }) {
       back={back}
       step={{ index, total: phase.ids.length, title: "Wiederholen" }}
       onDone={(r) => {
-        results.current.push(...r);
+        // keep the progress key so "Fehler üben" asks the same kind of question again
+        results.current.push(...r.map((x) => ({ ...x, streetId: key })));
         if (index + 1 < phase.ids.length) {
           setIndex(index + 1);
           return;

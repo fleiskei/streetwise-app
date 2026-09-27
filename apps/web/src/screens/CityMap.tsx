@@ -320,6 +320,7 @@ export function CityMap({
             }}
             padding={PADDING}
             attribution={false}
+            postcodeToggle={mode === "explore"}
           />
         }
       >

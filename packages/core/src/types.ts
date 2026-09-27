@@ -20,6 +20,8 @@ export interface StreetProps {
   center: LonLat;
   /** Length in metres (0 for squares). */
   length: number;
+  /** Postcodes the street lies in, largest share first (E4); absent in older data. */
+  postcodes?: string[];
 }
 
 export type StreetGeometry =
@@ -90,5 +92,19 @@ export interface CityLevels {
 
 export const DATA_FORMAT_VERSION = 1;
 
-/** Quiz modes, see docs/REQUIREMENTS.md 2.2. */
-export type Mode = "choice" | "match" | "locate" | "complete";
+/** Quiz modes, see docs/REQUIREMENTS.md 2.2; "postcode" asks for the postcode of a street (F-27). */
+export type Mode = "choice" | "match" | "locate" | "complete" | "postcode";
+
+/** A postcode area (postcodes.geojson). */
+export interface PostcodeFeature {
+  type: "Feature";
+  properties: { code: string; label: LonLat };
+  geometry:
+    | { type: "Polygon"; coordinates: LonLat[][] }
+    | { type: "MultiPolygon"; coordinates: LonLat[][][] };
+}
+
+export interface PostcodeCollection {
+  type: "FeatureCollection";
+  features: PostcodeFeature[];
+}

@@ -40,11 +40,19 @@ export function TopBar({
   );
 }
 
-export function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
+export function ProgressBar({
+  value,
+  className = "",
+  tone = "default",
+}: {
+  value: number;
+  className?: string;
+  tone?: "default" | "plz";
+}) {
   return (
     <div className={`h-1.5 overflow-hidden rounded-full bg-black/8 dark:bg-white/10 ${className}`}>
       <div
-        className="h-full rounded-full bg-gradient-to-r from-brand to-teal-500 transition-[width] duration-500"
+        className={`h-full rounded-full transition-[width] duration-500 ${tone === "plz" ? "bg-gradient-to-r from-violet-600 to-fuchsia-500" : "bg-gradient-to-r from-brand to-teal-500"}`}
         style={{ width: `${Math.round(value * 100)}%` }}
       />
     </div>

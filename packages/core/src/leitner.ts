@@ -5,7 +5,13 @@ export const INTERVAL_DAYS = [0, 1, 3, 7, 16, 35] as const;
 export const MAX_BOX = INTERVAL_DAYS.length - 1;
 export const MASTERED_BOX = 3;
 /** How far a correct answer moves a street up, by mode (F-11). */
-export const MODE_GAIN: Record<Mode, number> = { choice: 0.5, match: 1, locate: 1, complete: 2 };
+export const MODE_GAIN: Record<Mode, number> = {
+  choice: 0.5,
+  match: 1,
+  locate: 1,
+  complete: 2,
+  postcode: 0.5,
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

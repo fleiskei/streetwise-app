@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { pickRoundStreets, ROUND_SIZE } from "@streetwise/core";
+import { pickRoundStreets, postcodeProgress, ROUND_SIZE } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { feedback } from "../lib/feedback";
 import { newlyUnlocked, unlockedLevelIds } from "../lib/levelProgress";
@@ -8,6 +8,7 @@ import { href, type LevelMode } from "../lib/router";
 import { ChoiceMode } from "../modes/ChoiceMode";
 import { LocateMode } from "../modes/LocateMode";
 import { MatchMode } from "../modes/MatchMode";
+import { PostcodeMode } from "../modes/PostcodeMode";
 import { RoundSummary } from "../modes/RoundSummary";
 import type { ModeProps, RoundResult } from "../modes/types";
 
@@ -15,6 +16,7 @@ const MODES: Record<LevelMode, (p: ModeProps) => React.ReactNode> = {
   choice: ChoiceMode,
   match: MatchMode,
   locate: LocateMode,
+  postcode: PostcodeMode,
 };
 
 type Phase =
@@ -34,8 +36,18 @@ export function Play({
 
   const newRound = (round: number, ids?: string[]): Phase => {
     const all = entry?.level.streetIds ?? [];
+    const streets = progressStore.get().streets;
+    // PLZ rounds: only streets with a postcode, weighted by the separate postcode progress.
     const picked =
-      ids ?? pickRoundStreets(all, progressStore.get().streets, ROUND_SIZE, Date.now());
+      ids ??
+      (mode === "postcode"
+        ? pickRoundStreets(
+            all.filter((id) => data.streetsById.get(id)?.properties.postcodes?.length),
+            postcodeProgress(streets),
+            ROUND_SIZE,
+            Date.now(),
+          )
+        : pickRoundStreets(all, streets, ROUND_SIZE, Date.now()));
     return {
       kind: "play",
       ids: picked,

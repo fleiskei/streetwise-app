@@ -40,6 +40,12 @@ export const MODE_INFO: Record<
     description: "Ein Name wird genannt – tippe die Straße auf der Karte an.",
     difficulty: "mittel",
   },
+  postcode: {
+    title: "PLZ zuordnen",
+    short: "PLZ",
+    description: "Welche Postleitzahl hat die markierte Straße? Danach siehst du das PLZ-Gebiet.",
+    difficulty: "leicht",
+  },
   complete: {
     title: "Karte vervollständigen",
     short: "Vervollständigen",

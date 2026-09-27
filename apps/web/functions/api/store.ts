@@ -10,7 +10,7 @@ import {
 
 /** D1 access for the synced state. Kept free of HTTP concerns so it can be tested with SQLite. */
 
-const MODES: readonly Mode[] = ["choice", "match", "locate", "complete"];
+const MODES: readonly Mode[] = ["choice", "match", "locate", "complete", "postcode"];
 
 export interface SyncAnswer extends Answer {
   id: string;

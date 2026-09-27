@@ -22,6 +22,7 @@ export const MODE_SLUGS: Record<Mode, string> = {
   match: "zuordnen",
   locate: "antippen",
   complete: "vervollstaendigen",
+  postcode: "plz",
 };
 const SLUG_MODES = Object.fromEntries(
   Object.entries(MODE_SLUGS)

@@ -56,7 +56,7 @@ Jeder Modus läuft auf einem **Level** (oder frei auf einem ganzen Bezirk).
 - F-25 **Zoom:** Man kann bis auf das ganze Stadtgebiet herauszoomen.
 - F-26 **Luftbild:** Die Grundkarte lässt sich auf ein Luftbild umschalten (freie Quelle, nur online).
 
-- F-27 **Postleitzahlen (geplant, E4):** Ziel ist, die PLZ-Gebiete zu kennen. Modus **„PLZ zuordnen“**: markierte Straße,
+- F-27 **Postleitzahlen (E4):** Ziel ist, die PLZ-Gebiete zu kennen. Modus **„PLZ zuordnen“**: markierte Straße,
   4 PLZ zur Auswahl; jede PLZ, in der die Straße liegt, zählt als richtig; danach wird das PLZ-Gebiet eingeblendet.
 - F-28 Der PLZ-Wissensstand ist pro Straße getrennt vom Namen (eigene Leitner-Boxen) und läuft über dieselben Levels.
   Die Level-Seite zeigt ihn als zweiten Balken, „Wiederholen“ fragt fällige PLZ mit ab. Levels werden weiter nur

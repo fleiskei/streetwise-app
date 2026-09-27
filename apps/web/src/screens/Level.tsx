@@ -1,4 +1,4 @@
-import { districtStatus, type Mode } from "@streetwise/core";
+import { districtStatus, levelStatus, postcodeProgress, type Mode } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
 import { useCityMap } from "../lib/cityMap";
 import { perfectLevelIds } from "../lib/levelProgress";
@@ -7,7 +7,7 @@ import { href } from "../lib/router";
 import { MODE_INFO } from "../modes/types";
 import { Card, ProgressBar, Screen, Stars, TopBar } from "../components/ui";
 
-const MODE_ORDER: Mode[] = ["choice", "match", "locate", "complete"];
+const MODE_ORDER: Mode[] = ["choice", "match", "locate", "postcode", "complete"];
 const DIFFICULTY_COLOR: Record<string, string> = {
   leicht: "bg-ok/15 text-ok",
   mittel: "bg-brand/15 text-brand",
@@ -27,6 +27,18 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
     );
   const { level, district } = entry;
   const status = districtStatus(district, progress.streets, perfect)[level.index]!;
+  // Postcode knowledge: separate progress over the level's streets that have a postcode (F-28).
+  const plzLevel = {
+    ...level,
+    streetIds: level.streetIds.filter(
+      (id) => data.streetsById.get(id)?.properties.postcodes?.length,
+    ),
+  };
+  const hasPlz = data.postcodes.length > 0 && plzLevel.streetIds.length > 0;
+  const plzStatus = levelStatus(plzLevel, postcodeProgress(progress.streets), {
+    unlocked: true,
+    perfectComplete: false,
+  });
 
   return (
     <Screen>
@@ -46,6 +58,17 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
           </span>
         </p>
         <ProgressBar value={status.ratio} className="mt-3" />
+        {hasPlz && (
+          <>
+            <p className="mt-3 flex justify-between text-sm">
+              <span className="font-medium text-[#7c3aed]">Postleitzahlen</span>
+              <span className="tabular-nums text-[var(--muted)]">
+                {plzStatus.mastered} / {plzStatus.total} gemeistert
+              </span>
+            </p>
+            <ProgressBar value={plzStatus.ratio} tone="plz" className="mt-1.5" />
+          </>
+        )}
         <p className="mt-2 text-xs text-[var(--muted)]">
           Ab 80 % gemeistert wird das nächste Level frei. Gemeistert = mehrfach richtig beantwortet.
         </p>
@@ -80,7 +103,7 @@ export function LevelScreen({ data, levelId }: { data: CityData; levelId: string
         Spielen
       </h2>
       <div className="grid gap-3">
-        {MODE_ORDER.map((m) => {
+        {MODE_ORDER.filter((m) => m !== "postcode" || hasPlz).map((m) => {
           const info = MODE_INFO[m];
           return (
             <Card

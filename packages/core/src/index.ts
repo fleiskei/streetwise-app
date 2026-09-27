@@ -8,3 +8,4 @@ export * from "./geo";
 export * from "./distractors";
 export * from "./round";
 export * from "./sync";
+export * from "./postcode";

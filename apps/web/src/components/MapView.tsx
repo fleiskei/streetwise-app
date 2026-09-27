@@ -16,6 +16,7 @@ import {
   hitTolerance,
   type BBox,
   type LonLat,
+  type PostcodeFeature,
   type StreetFeature,
 } from "@streetwise/core";
 import type { CityData } from "../lib/cityData";
@@ -37,7 +38,7 @@ export interface MapMarker {
   at: LonLat;
   text: string;
   /** "sign": street-name sign; "badge": round number badge; "note": small info chip. */
-  variant: "sign" | "badge" | "note";
+  variant: "sign" | "badge" | "note" | "plz";
   tone?: "default" | "active" | "correct" | "wrong";
   onClick?: () => void;
 }
@@ -69,6 +70,10 @@ export interface MapViewProps {
   attribution?: boolean;
   /** Status of drawn streets without an explicit entry in `status`. */
   baseStatus?: StreetStatus;
+  /** Postcode areas to outline and label (e.g. the answer in "PLZ zuordnen"). */
+  areas?: PostcodeFeature[];
+  /** Offer the "PLZ" button that shows all postcode areas (city map, E4.5). */
+  postcodeToggle?: boolean;
   /** Called after the map stopped moving: centre of the free (unpadded) area and visible bounds. */
   onMoveEnd?: (center: LonLat, bounds: BBox) => void;
 }
@@ -115,6 +120,7 @@ const MARKER_CLASS: Record<MapMarker["variant"], string> = {
   sign: "street-sign animate-pop px-3 py-1.5 text-[15px] whitespace-nowrap",
   badge: "map-badge animate-pop",
   note: "map-note animate-pop",
+  plz: "map-plz animate-pop",
 };
 
 export function MapView({
@@ -130,6 +136,8 @@ export function MapView({
   attribution = true,
   baseStatus = "idle",
   onMoveEnd,
+  areas,
+  postcodeToggle = false,
 }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
@@ -139,6 +147,9 @@ export function MapView({
   // Aerial imagery is online only; fall back to the drawn map when offline.
   const showAerial = !!data.meta.aerial && settings.aerial && online;
   const aerialRef = useRef(showAerial);
+  const showPostcodes = postcodeToggle && settings.postcodes && data.postcodes.length > 0;
+  const shownAreas = areas ?? (showPostcodes ? data.postcodes : []);
+  const shownAreasRef = useRef(shownAreas);
   const tapRef = useRef(onTap);
   const idsRef = useRef(streetIds);
   const baseRef = useRef(baseStatus);
@@ -151,7 +162,29 @@ export function MapView({
     moveRef.current = onMoveEnd;
     paddingRef.current = padding;
     aerialRef.current = showAerial;
+    shownAreasRef.current = shownAreas;
   });
+
+  // Postcode areas: outlines + big labels (HTML markers).
+  const areasKey = shownAreas.map((a) => a.properties.code).join(",");
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () =>
+      (map.getSource("areas") as GeoJSONSource | undefined)?.setData({
+        type: "FeatureCollection",
+        features: shownAreasRef.current,
+      } as unknown as FeatureCollection);
+    if (map.getSource("areas")) apply();
+    else map.once("load", apply);
+    const labels = shownAreasRef.current.map((a) => {
+      const el = document.createElement("div");
+      el.className = MARKER_CLASS.plz + " pointer-events-none";
+      el.textContent = a.properties.code;
+      return new Marker({ element: el, anchor: "center" }).setLngLat(a.properties.label).addTo(map);
+    });
+    return () => labels.forEach((m) => m.remove());
+  }, [areasKey, dark]);
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
@@ -241,6 +274,29 @@ export function MapView({
         source: "mask",
         paint: { "fill-color": dark ? "#000" : "#0b1220", "fill-opacity": dark ? 0.45 : 0.28 },
         layout: { visibility: outline?.length ? "visible" : "none" },
+      });
+      map.addSource("areas", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: shownAreasRef.current,
+        } as unknown as FeatureCollection,
+      });
+      map.addLayer({
+        id: "areas-fill",
+        type: "fill",
+        source: "areas",
+        paint: { "fill-color": "#7c3aed", "fill-opacity": 0.08 },
+      });
+      map.addLayer({
+        id: "areas-line",
+        type: "line",
+        source: "areas",
+        paint: {
+          "line-color": "#7c3aed",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.5, 16, 3.5],
+          "line-dasharray": [2, 1.5],
+        },
       });
       map.addLayer({
         id: "squares",
@@ -418,50 +474,62 @@ export function MapView({
   return (
     <div className="absolute inset-0">
       <div ref={container} className="h-full w-full" />
-      {data.meta.aerial && (
+      {(data.meta.aerial || (postcodeToggle && data.postcodes.length > 0)) && (
         <div
-          className="pointer-events-none absolute right-3 flex flex-col items-end gap-1"
+          className="pointer-events-none absolute right-3 flex flex-col items-end gap-2"
           style={{ top: padding.top + 8 }}
         >
-          <button
-            onClick={() => updateSettings({ aerial: !settings.aerial })}
-            disabled={!online}
-            aria-pressed={showAerial}
-            aria-label={showAerial ? "Karte anzeigen" : "Luftbild anzeigen"}
-            title={online ? undefined : "Luftbild nur online verfügbar"}
-            className={`glass pointer-events-auto grid h-11 w-11 place-items-center rounded-full shadow-lg disabled:opacity-50 ${showAerial ? "text-brand" : ""}`}
-          >
-            {showAerial ? (
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />
-              </svg>
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 3l9 5-9 5-9-5 9-5z" />
-                <path d="M3 13l9 5 9-5" />
-              </svg>
-            )}
-          </button>
+          {data.meta.aerial && (
+            <button
+              onClick={() => updateSettings({ aerial: !settings.aerial })}
+              disabled={!online}
+              aria-pressed={showAerial}
+              aria-label={showAerial ? "Karte anzeigen" : "Luftbild anzeigen"}
+              title={online ? undefined : "Luftbild nur online verfügbar"}
+              className={`glass pointer-events-auto grid h-11 w-11 place-items-center rounded-full shadow-lg disabled:opacity-50 ${showAerial ? "text-brand" : ""}`}
+            >
+              {showAerial ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3l9 5-9 5-9-5 9-5z" />
+                  <path d="M3 13l9 5 9-5" />
+                </svg>
+              )}
+            </button>
+          )}
           {showAerial && (
             <span className="glass rounded-full px-2 py-0.5 text-[10px] text-[var(--muted)]">
               Geobasis NRW
             </span>
+          )}
+          {postcodeToggle && data.postcodes.length > 0 && (
+            <button
+              onClick={() => updateSettings({ postcodes: !settings.postcodes })}
+              aria-pressed={showPostcodes}
+              aria-label={showPostcodes ? "PLZ-Gebiete ausblenden" : "PLZ-Gebiete anzeigen"}
+              className={`glass pointer-events-auto grid h-11 w-11 place-items-center rounded-full text-[11px] font-bold shadow-lg ${showPostcodes ? "text-[#7c3aed]" : ""}`}
+            >
+              PLZ
+            </button>
           )}
         </div>
       )}

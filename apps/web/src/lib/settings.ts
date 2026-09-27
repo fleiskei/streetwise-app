@@ -7,6 +7,8 @@ export interface Settings {
   autocompleteMinChars: 0 | 2 | 3 | 4;
   /** Show aerial imagery instead of the drawn base map (online only). */
   aerial: boolean;
+  /** Show postcode areas on the city map (E4.5). */
+  postcodes: boolean;
   /** Last local change (epoch ms), for last-writer-wins sync. */
   updatedAt: number;
 }
@@ -16,6 +18,7 @@ export const settingsStore = createStore<Settings>("streetwise-settings-v1", {
   haptics: true,
   autocompleteMinChars: 3,
   aerial: false,
+  postcodes: false,
   updatedAt: 0,
 });
 

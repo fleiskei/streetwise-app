@@ -186,7 +186,7 @@ Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell
   ein Level, wenn alle seine Straßen in der Stadtkarte ohne Tipp gefunden wurden.
 - **Datenmodell** (lokal, in M4 synchronisiert): `cityMap: { found: Record<streetId, { at, hinted }> }`.
 
-## 7b. E4: Postleitzahlen (geplant, 2026-09-27)
+## 7b. E4: Postleitzahlen (umgesetzt, 2026-09-27)
 
 Ziel: die **PLZ-Gebiete** kennen. Einstieg ist die Spielform **Straße → PLZ (Auswahl)**; nach jeder Antwort wird das
 richtige Gebiet eingeblendet. „PLZ → Gebiet antippen“ folgt in einem zweiten Schritt (E4b).
@@ -194,11 +194,11 @@ richtige Gebiet eingeblendet. „PLZ → Gebiet antippen“ folgt in einem zweit
 | # | Schritt | Ergebnis | Aufwand |
 |---|---|---|---|
 | E4.0 ✅ | Datenprüfung | **Ergebnis (OSM-Stand 2026-09-27):** 10 PLZ-Gebiete (52062–52080) mit Grenzen (`boundary=postal_code`). Sie decken das Stadtgebiet **zu 100 %** ab, ohne Überlappung. 19.997 von 20.000 Adressen (`addr:postcode`) liegen im Gebiet ihrer PLZ. Anteile an der Stadtfläche: 52076 34 %, 52074 20 %, 52072 12 %, 52080 9 %, 52078 8 %, 52070 6 %, 52066 5 %, 52068 3 %, 52064 1 %, 52062 1 %. → Die Grenzen sind die Quelle, ein Fallback ist nicht nötig. | S |
-| E4.1 | Pipeline | `postcodes.geojson` (Code, vereinfachte Fläche, Beschriftungspunkt). Jede Straße bekommt `postcodes: string[]`, bestimmt über den Längenanteil in den Gebieten (≥ 5 %), sortiert nach Anteil. Plausibilitätsbericht: Straßen ohne PLZ, Straßen mit mehreren PLZ. | M |
-| E4.2 | Lernlogik | Eigener Wissensstand pro Straße unter dem Schlüssel `plz:<streetId>` mit derselben Leitner-Logik und neuem Modus `postcode` (+½ Box wie Multiple Choice). Antworten laufen über denselben Sync, **ohne Schemaänderung**. Levels werden weiter nur über die Namen freigeschaltet. | S |
-| E4.3 | Modus „PLZ zuordnen“ | Die Straße ist markiert, dazu 4 PLZ. Die falschen Antworten kommen aus benachbarten Gebieten, nie eine PLZ, in der die Straße liegt. **Jede PLZ, in der die Straße liegt, zählt als richtig.** Danach werden Gebietsgrenze und PLZ eingeblendet. | M |
-| E4.4 | Einbindung | Level-Seite: Karte „PLZ zuordnen“ und ein zweiter Balken „PLZ gemeistert“. „Wiederholen“ fragt fällige PLZ mit ab. | S |
-| E4.5 | Anzeige | Umschalter „PLZ“ neben dem Luftbild-Schalter (Stadtkarte/Erkunden): Gebietsgrenzen und große PLZ-Beschriftungen, die Einstellung wird gespeichert. | S |
+| E4.1 ✅ | Pipeline | `postcodes.geojson` (Code, vereinfachte Fläche, Beschriftungspunkt). Jede Straße bekommt `postcodes: string[]`, bestimmt über den Längenanteil in den Gebieten (≥ 5 %), sortiert nach Anteil. Plausibilitätsbericht: Straßen ohne PLZ, Straßen mit mehreren PLZ. | M |
+| E4.2 ✅ | Lernlogik | Eigener Wissensstand pro Straße unter dem Schlüssel `plz:<streetId>` mit derselben Leitner-Logik und neuem Modus `postcode` (+½ Box wie Multiple Choice). Antworten laufen über denselben Sync, **ohne Schemaänderung**. Levels werden weiter nur über die Namen freigeschaltet. | S |
+| E4.3 ✅ | Modus „PLZ zuordnen“ | Die Straße ist markiert, dazu 4 PLZ. Die falschen Antworten kommen aus benachbarten Gebieten, nie eine PLZ, in der die Straße liegt. **Jede PLZ, in der die Straße liegt, zählt als richtig.** Danach werden Gebietsgrenze und PLZ eingeblendet. | M |
+| E4.4 ✅ | Einbindung | Level-Seite: Karte „PLZ zuordnen“ und ein zweiter Balken „PLZ gemeistert“. „Wiederholen“ fragt fällige PLZ mit ab. | S |
+| E4.5 ✅ | Anzeige | Umschalter „PLZ“ neben dem Luftbild-Schalter (Stadtkarte/Erkunden): Gebietsgrenzen und große PLZ-Beschriftungen, die Einstellung wird gespeichert. | S |
 
 Quelle: OSM-Grenzen `boundary=postal_code` (ODbL, wie die Straßen); laut E4.0 vollständig und konsistent.
 Hinweis: Die Innenstadt-PLZ (52062, 52064) sind flächenmäßig klein, dort liegen aber viele Straßen.

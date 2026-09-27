@@ -157,3 +157,15 @@ body {
 .animate-shake {
   animation: shake 0.45s both;
 }
+
+.map-plz {
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+}

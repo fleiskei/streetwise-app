@@ -12,6 +12,7 @@ import {
   type BBox,
   type CityLevels,
   type CityMeta,
+  type PostcodeCollection,
   type District,
   type LonLat,
   type StreetCollection,
@@ -20,6 +21,7 @@ import {
 import { overpass } from "./overpass";
 import { relationPolygons, type OverpassRelation } from "./osm";
 import { buildLevels } from "./levels";
+import { assignPostcodes, labelPoint, type PostcodeArea } from "./postcodes";
 import { roundCoords, simplifyLine } from "./simplify";
 import {
   assignDistrict,
@@ -108,6 +110,23 @@ async function main() {
     { useCache },
   );
 
+  console.log(`[${cityId}] loading postcode areas …`);
+  const postcodeRes = await overpass(
+    `[out:json][timeout:300];${areaDef}relation(area.city)["boundary"="postal_code"];out geom;`,
+    { useCache },
+  );
+  const postcodeAreas: PostcodeArea[] = postcodeRes.elements
+    .filter((e): e is OverpassRelation => e.type === "relation" && !!e.tags?.postal_code)
+    .map((r) => ({ code: r.tags!.postal_code!, polys: relationPolygons(r) }))
+    // only areas that overlap the city (relation(area) also returns neighbours touching it)
+    .filter(
+      (a) =>
+        a.polys.length &&
+        a.polys.some((poly) =>
+          cityPolys.some((cp) => poly[0]!.some((pt) => pointInPolygon(pt, cp))),
+        ),
+    );
+
   const merged = mergePieces(piecesFromOverpass(streetsRes.elements));
   const districtPolys = districtRels.map((d) => d.polys);
   const features: StreetFeature[] = [];
@@ -144,6 +163,7 @@ async function main() {
         importance: importance(s),
         center: roundCoords([center])[0]!,
         length: Math.round(s.length),
+        postcodes: assignPostcodes(s, postcodeAreas),
       },
       geometry,
     };
@@ -204,10 +224,27 @@ async function main() {
 
   const outDir = path.join(ROOT, "apps", "web", "public", "data", config.id);
   await mkdir(outDir, { recursive: true });
+  const postcodes: PostcodeCollection = {
+    type: "FeatureCollection",
+    features: postcodeAreas
+      .sort((a, b) => a.code.localeCompare(b.code))
+      .map((a) => {
+        const polys = a.polys.map((p) => p.map((r) => roundCoords(simplifyLine(r, 10), 5)));
+        return {
+          type: "Feature" as const,
+          properties: { code: a.code, label: roundCoords([labelPoint(a.polys)], 5)[0]! },
+          geometry:
+            polys.length === 1
+              ? { type: "Polygon" as const, coordinates: polys[0]! }
+              : { type: "MultiPolygon" as const, coordinates: polys },
+        };
+      }),
+  };
   const outputs: [string, string][] = [
     ["levels.json", JSON.stringify(levels) + "\n"],
     ["names.json", JSON.stringify(names) + "\n"],
     ["streets.geojson", JSON.stringify(collection) + "\n"],
+    ["postcodes.geojson", JSON.stringify(postcodes) + "\n"],
   ];
   // Sanity checks: never replace good data with an empty or much smaller data set
   // (an Overpass server may return a partial result).
@@ -233,7 +270,20 @@ async function main() {
   const changed =
     outputs.some(([, content], i) => previous[i] !== content) ||
     stripTimes(previousMeta) !== stripTimes(meta);
-  if (changed) {
+  // Public Overpass servers lag behind each other; never replace data with an older OSM
+  // snapshot (that made the street count flip between runs). A new output file (e.g. the
+  // first postcodes.geojson) is always written.
+  const stale =
+    !!previousMeta?.osmTimestamp &&
+    !!meta.osmTimestamp &&
+    meta.osmTimestamp < previousMeta.osmTimestamp &&
+    previous.every((p) => p !== null) &&
+    stripTimes(previousMeta) === stripTimes({ ...meta, streetCount: previousMeta.streetCount });
+  if (stale) {
+    console.log(
+      `[${cityId}] OSM snapshot ${meta.osmTimestamp} is older than the current data (${previousMeta!.osmTimestamp}) – keeping existing files`,
+    );
+  } else if (changed) {
     for (const [f, content] of outputs) await writeFile(path.join(outDir, f), content);
     await writeFile(path.join(outDir, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
   } else {
@@ -262,6 +312,22 @@ async function main() {
     }`,
   );
   console.log(`  squares: ${features.filter((f) => f.properties.kind === "square").length}`);
+  const withoutPlz = features.filter((f) => !f.properties.postcodes?.length);
+  const multiPlz = features.filter((f) => (f.properties.postcodes?.length ?? 0) > 1);
+  console.log(
+    `  postcode areas: ${postcodeAreas.length} (${postcodeAreas.map((a) => a.code).join(", ")})`,
+  );
+  console.log(
+    `  streets without postcode: ${withoutPlz.length}${
+      withoutPlz.length
+        ? ` (e.g. ${withoutPlz
+            .slice(0, 5)
+            .map((f) => f.properties.name)
+            .join(", ")})`
+        : ""
+    }`,
+  );
+  console.log(`  streets in several postcodes: ${multiPlz.length}`);
   console.log(`  written to ${path.relative(ROOT, outDir)}`);
 }
 

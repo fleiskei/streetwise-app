@@ -4,6 +4,7 @@ import type {
   CityMeta,
   District,
   Level,
+  PostcodeFeature,
   StreetCollection,
   StreetFeature,
 } from "@streetwise/core";
@@ -19,6 +20,9 @@ export interface CityData {
   levelById: Map<string, { level: Level; district: District }>;
   /** Vector tiles available (tools/tiles has been run)? Otherwise the streets act as the base map. */
   hasTiles: boolean;
+  /** Postcode areas (E4); empty for data built before postcodes existed. */
+  postcodes: PostcodeFeature[];
+  postcodeByCode: Map<string, PostcodeFeature>;
 }
 
 export type CityDataState =
@@ -42,7 +46,7 @@ let cache: Promise<CityData> | null = null;
 export function loadCity(city = CITY): Promise<CityData> {
   cache ??= (async () => {
     const base = `/data/${city}`;
-    const [meta, levels, streets, names, hasTiles] = await Promise.all([
+    const [meta, levels, streets, names, hasTiles, postcodeData] = await Promise.all([
       getJson<CityMeta>(`${base}/meta.json`),
       getJson<CityLevels>(`${base}/levels.json`),
       getJson<StreetCollection>(`${base}/streets.geojson`),
@@ -51,12 +55,27 @@ export function loadCity(city = CITY): Promise<CityData> {
         () => true,
         () => false,
       ),
+      getJson<{ features: PostcodeFeature[] }>(`${base}/postcodes.geojson`).catch(() => ({
+        features: [],
+      })),
     ]);
+    const postcodes = postcodeData.features;
+    const postcodeByCode = new Map(postcodes.map((p) => [p.properties.code, p]));
     const streetsById = new Map(streets.features.map((f) => [f.properties.id, f]));
     const levelById = new Map<string, { level: Level; district: District }>();
     for (const district of levels.districts)
       for (const level of district.levels) levelById.set(level.id, { level, district });
-    return { meta, levels, streets, names, streetsById, levelById, hasTiles };
+    return {
+      meta,
+      levels,
+      streets,
+      names,
+      streetsById,
+      levelById,
+      hasTiles,
+      postcodes,
+      postcodeByCode,
+    };
   })();
   cache.catch(() => (cache = null));
   return cache;
