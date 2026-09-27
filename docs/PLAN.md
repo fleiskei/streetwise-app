@@ -171,7 +171,7 @@ Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell
 - **Bezirksfilter** (Chips): zoomt auf den Bezirk, dimmt den Rest ab und zeigt den Zähler des Bezirks. Ohne Filter gilt
   der Zähler für die ganze Stadt („x von 1.516“), dazu ein Blatt mit dem Stand pro Bezirk.
 - **Vervollständigen:** Graue Straße antippen, Namen eingeben (Autocomplete aus allen Namen der Stadt). Richtig →
-  grün, danach ist automatisch die nächstgelegene fehlende Straße markiert. Der **Stand bleibt gespeichert**, bis man
+  grün; die nächste Straße wählt man selbst per Antippen. Der **Stand bleibt gespeichert**, bis man
   ihn mit **Reset** (mit Bestätigung) zurücksetzt. *(Nach Test-Feedback geändert: vorher wurden beliebige Namen
   eingetippt.)*
 - **Tipp statt Aufgeben:** Der Tipp markiert eine noch fehlende Straße nahe der Kartenmitte und zeigt die ersten

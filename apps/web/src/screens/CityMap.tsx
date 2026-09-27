@@ -144,27 +144,12 @@ export function CityMap({
     setView(d ? d.bounds : data.meta.bounds);
   };
 
-  const flyToIfHidden = (ids: string[], minMeters = 500) => {
-    const [w, s, e, n] = visible.current;
-    const inView = ids.some((id) => {
-      const [x, y] = data.streetsById.get(id)!.properties.center;
-      return x > w && x < e && y > s && y < n;
-    });
-    if (!inView)
-      setView(
-        streetsBBox(
-          ids.map((id) => data.streetsById.get(id)!),
-          minMeters,
-        ),
-      );
-  };
-
   /** Nearest street in scope that is still missing (optionally excluding one). */
-  const nearestMissing = (from: LonLat, exclude?: string): string | null => {
+  const nearestMissing = (from: LonLat): string | null => {
     let best: string | null = null;
     let bestD = Infinity;
     for (const id of scopeIds) {
-      if (id === exclude || cityMap.found[id]) continue;
+      if (cityMap.found[id]) continue;
       const d = haversine(from, data.streetsById.get(id)!.properties.center);
       if (d < bestD) {
         bestD = d;
@@ -195,11 +180,10 @@ export function CityMap({
       );
       feedback.correct();
       setShown(target);
-      setMessage({ tone: "ok", text: `${name(target)} ✓` });
-      // Keep the flow going: continue with the nearest missing street.
-      const next = nearestMissing(data.streetsById.get(target)!.properties.center, target);
-      selectTarget(next);
-      if (next) flyToIfHidden([next], 400);
+      setMessage({ tone: "ok", text: `${name(target)} ✓ – tippe die nächste Straße an` });
+      // The next street is chosen by the user (tap), not automatically.
+      selectTarget(null);
+      inputRef.current?.blur();
     } else {
       feedback.wrong();
       if (!wrongOnce.current) {
@@ -214,7 +198,6 @@ export function CityMap({
       });
     }
     setText("");
-    inputRef.current?.focus();
   };
 
   const hint = () => {
