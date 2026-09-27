@@ -6,25 +6,10 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: TileMatrixSet EPSG_3857_16
-        run: |
-          curl -sS -m 60 "https://www.wmts.nrw.de/geobasis/wmts_nw_dop/1.0.0/WMTSCapabilities.xml" -o cap.xml
-          python3 - <<'PY'
-          import re
-          s = open("cap.xml").read()
-          i = s.find("<ows:Identifier>EPSG_3857_16</ows:Identifier>")
-          block = s[i:s.find("</TileMatrixSet>", i)]
-          for m in re.finditer(r"<TileMatrix>(.*?)</TileMatrix>", block, re.S):
-              t = m.group(1)
-              g = lambda k: (re.search(rf"<(?:ows:)?{k}>([^<]*)<", t) or [None, None])[1]
-              print(g("Identifier"), g("ScaleDenominator"), g("TopLeftCorner"), g("MatrixWidth"), g("MatrixHeight"), g("TileWidth"))
-          j = s.find("<Layer>")
-          print(re.findall(r"<TileMatrixSetLink>.*?</TileMatrixSetLink>", s[j:], re.S)[:2])
-          print(re.findall(r"<ows:WGS84BoundingBox>.*?</ows:WGS84BoundingBox>", s, re.S)[:1])
-          PY
-      - name: Sample tiles (Aachen Dom)
+      - name: Sample tiles (Aachen Dom), matrix = zoom - 5
         run: |
           B=https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16
-          for t in "16/33875/22004" "14/8468/5501" "12/33875/22004" "10/8468/5501" "18/135502/88019"; do
-            curl -sS -o /dev/null -w "$t -> %{http_code} %{content_type} %{size_download}B\n" "$B/$t"
+          for t in "11/33875/22004" "09/8468/5501" "13/135502/88019" "15/542008/352076"; do
+            curl -sS -o /dev/null -H "Origin: https://claude-street-names-training.streetwise.pages.dev" -D h.txt -w "$t -> %{http_code} %{content_type} %{size_download}B\n" "$B/$t"
+            grep -i "access-control-allow-origin" h.txt || echo "  (no ACAO)"
           done
