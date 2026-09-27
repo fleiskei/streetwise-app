@@ -1,0 +1,15 @@
+{
+  "name": "@streetwise/data",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build-city": "tsx src/build-city.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@streetwise/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}

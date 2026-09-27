@@ -1,0 +1,16 @@
+{
+  "name": "@streetwise/tiles",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build-tiles": "tsx src/build-tiles.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@streetwise/core": "workspace:*",
+    "pmtiles": "^4.5.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}
