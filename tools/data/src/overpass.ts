@@ -46,9 +46,16 @@ export async function overpass(query: string, { useCache = true } = {}): Promise
             `${url}: HTTP ${res.status} ${await res.text().then((t) => t.slice(0, 200))}`,
           );
         const text = await res.text();
+        const parsed = JSON.parse(text) as OverpassResponse & { remark?: string };
+        // Busy or misconfigured servers sometimes answer 200 with no data (e.g. a runtime
+        // remark or a missing area index); our queries never legitimately return nothing.
+        if (!parsed.elements?.length)
+          throw new Error(
+            `${url}: empty result${parsed.remark ? ` (${parsed.remark.slice(0, 120)})` : ""}`,
+          );
         await mkdir(CACHE_DIR, { recursive: true });
         await writeFile(file, text);
-        return JSON.parse(text) as OverpassResponse;
+        return parsed;
       } catch (e) {
         lastError = e;
         console.warn(`Overpass request failed: ${String(e).slice(0, 120)}`);

@@ -39,6 +39,8 @@ interface CityConfig {
 }
 
 const ROOT = path.join(import.meta.dirname, "..", "..", "..");
+/** A city build with fewer streets than this is certainly broken. */
+const MIN_STREETS = 100;
 
 function bboxOf(points: LonLat[]): BBox {
   let [w, s, e, n] = [Infinity, Infinity, -Infinity, -Infinity];
@@ -204,6 +206,21 @@ async function main() {
     ["names.json", JSON.stringify(names) + "\n"],
     ["streets.geojson", JSON.stringify(collection) + "\n"],
   ];
+  // Sanity checks: never replace good data with an empty or much smaller data set
+  // (an Overpass server may return a partial result).
+  if (features.length < MIN_STREETS)
+    throw new Error(`only ${features.length} streets – refusing to write data`);
+  const previousMeta = await readFile(path.join(outDir, "meta.json"), "utf8")
+    .then((t) => JSON.parse(t) as CityMeta)
+    .catch(() => null);
+  if (
+    previousMeta &&
+    features.length < previousMeta.streetCount * 0.9 &&
+    !process.argv.includes("--allow-shrink")
+  )
+    throw new Error(
+      `street count dropped from ${previousMeta.streetCount} to ${features.length} – refusing to write (use --allow-shrink if intended)`,
+    );
   const previous = await Promise.all(
     outputs.map(([f]) => readFile(path.join(outDir, f), "utf8").catch(() => null)),
   );
