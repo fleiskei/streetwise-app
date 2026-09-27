@@ -8,6 +8,7 @@ import path from "node:path";
 import {
   DATA_FORMAT_VERSION,
   pointInPolygon,
+  type AerialSource,
   type BBox,
   type CityLevels,
   type CityMeta,
@@ -36,6 +37,7 @@ interface CityConfig {
   osm: { cityArea: string; districtAdminLevel: number };
   expectedDistricts: string[];
   center: LonLat;
+  aerial?: AerialSource;
 }
 
 const ROOT = path.join(import.meta.dirname, "..", "..", "..");
@@ -192,6 +194,7 @@ async function main() {
     attribution: "© OpenStreetMap-Mitwirkende (ODbL)",
     streetCount: features.length,
     formatVersion: DATA_FORMAT_VERSION,
+    ...(config.aerial ? { aerial: config.aerial } : {}),
   };
   const levels: CityLevels = { city: config.id, districts };
   const names = [...new Set(features.map((f) => f.properties.name))].sort((a, b) =>
@@ -224,7 +227,12 @@ async function main() {
   const previous = await Promise.all(
     outputs.map(([f]) => readFile(path.join(outDir, f), "utf8").catch(() => null)),
   );
-  const changed = outputs.some(([, content], i) => previous[i] !== content);
+  // Meta counts as changed when anything but the timestamps differs (e.g. new aerial config).
+  const stripTimes = (m: CityMeta | null) =>
+    m && JSON.stringify({ ...m, generatedAt: null, osmTimestamp: null });
+  const changed =
+    outputs.some(([, content], i) => previous[i] !== content) ||
+    stripTimes(previousMeta) !== stripTimes(meta);
   if (changed) {
     for (const [f, content] of outputs) await writeFile(path.join(outDir, f), content);
     await writeFile(path.join(outDir, "meta.json"), JSON.stringify(meta, null, 2) + "\n");

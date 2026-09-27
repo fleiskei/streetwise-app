@@ -15,5 +15,12 @@
   "osmTimestamp": "2026-09-27T12:36:36Z",
   "attribution": "© OpenStreetMap-Mitwirkende (ODbL)",
   "streetCount": 1516,
-  "formatVersion": 1
+  "formatVersion": 1,
+  "aerial": {
+    "tiles": "https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/{m}/{x}/{y}",
+    "matrixOffset": 5,
+    "minzoom": 5,
+    "maxzoom": 20,
+    "attribution": "Luftbild © Geobasis NRW (dl-de/zero-2.0)"
+  }
 }

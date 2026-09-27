@@ -163,7 +163,7 @@ Reihenfolge: **E1 → E2 → E3 → M4**. E2 kommt vor M4, damit das Datenmodell
 |---|---|---|---|
 | E1 ✅ | **Weiter rauszoomen** | Die Pan- und Zoomgrenze ist das Stadtgebiet plus Rand statt Level plus Rand. Die Level-Ansicht bleibt als Startausschnitt. | S |
 | E2 ✅ | **Stadtkarte** (Erkunden und Vervollständigen ohne Level) | siehe unten | L |
-| E3 | **Satellitenbild** | Umschalter Karte/Luftbild. Quelle sind die NRW-Luftbilder (DOP, Geobasis NRW, Lizenz dl-de/zero-2.0), nur online. Straßen-Overlay und Schilder bleiben. Endpoint und CORS werden geprüft; falls nötig, laufen die Anfragen über eine Pages Function mit Cache. | M |
+| E3 ✅ | **Satellitenbild** | Umschalter Karte/Luftbild. Quelle sind die NRW-Luftbilder (DOP, Geobasis NRW, Lizenz dl-de/zero-2.0), nur online. Straßen-Overlay und Schilder bleiben. Umgesetzt: WMTS `wmts_nw_dop`, Matrix-Set `EPSG_3857_16` (Matrix = Zoom − 5), CORS erlaubt, kein Proxy nötig; Quelle in `cities/aachen.json` (`aerial`). | M |
 
 ### E2 Stadtkarte
 - **Ein durchgehender Stand für die ganze Stadt**, frei zoombar. Einstieg über eine eigene Karte auf der Startseite
