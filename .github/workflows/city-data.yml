@@ -2,11 +2,13 @@ name: Build city data
 
 # Regenerates street data (Overpass) and base-map tiles (Protomaps) and commits them
 # to the branch. Runs manually from the Actions tab (once this file is on the default
-# branch) and on every push that changes a city config or this workflow.
+# branch) and on every push that changes a city config, the data pipeline or this
+# workflow. On push, tiles are only built when missing.
 on:
   push:
     paths:
       - "cities/**"
+      - "tools/data/src/**"
       - ".github/workflows/city-data.yml"
   workflow_dispatch:
     inputs:
@@ -26,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -37,7 +41,7 @@ jobs:
       - name: Street data
         run: pnpm --filter @streetwise/data build-city "${{ inputs.city || 'aachen' }}" --refresh
       - name: Tiles
-        if: github.event_name == 'push' || inputs.tiles
+        if: inputs.tiles || (github.event_name == 'push' && hashFiles('apps/web/public/tiles/aachen/tiles.json') == '')
         run: pnpm --filter @streetwise/tiles build-tiles "${{ inputs.city || 'aachen' }}" --force
       - name: Commit
         run: |
@@ -47,3 +51,13 @@ jobs:
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
           git commit -m "data: rebuild ${{ inputs.city || 'aachen' }} from OpenStreetMap"
           git push
+      # Pushes made with GITHUB_TOKEN do not trigger other workflows, so deploy the new data here.
+      - name: Build app
+        run: pnpm build
+      - name: Deploy
+        if: env.HAS_TOKEN == 'true'
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler pages deploy dist --project-name=streetwise --branch="${GITHUB_REF_NAME}" --commit-dirty=true

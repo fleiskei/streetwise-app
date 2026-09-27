@@ -6,7 +6,7 @@ import {
   type OverpassElement,
   type OverpassRelation,
 } from "./osm";
-import { bisect, buildLevels, type LevelInput } from "./levels";
+import { buildLevels, growGroups, type LevelInput } from "./levels";
 import { simplifyLine } from "./simplify";
 import { assignDistrict, mergePieces, piecesFromOverpass, streetId } from "./streets";
 
@@ -177,10 +177,16 @@ describe("levels", () => {
     importance: 100 - i,
   }));
 
-  it("bisect keeps groups within size limits", () => {
-    const groups = bisect(items, 25);
-    expect(groups.flat()).toHaveLength(60);
-    for (const grp of groups) expect(grp.length).toBeLessThanOrEqual(25);
+  it("growGroups starts at the origin and keeps groups compact", () => {
+    const pts = Array.from({ length: 40 }, (_, i) => ({
+      center: [6 + (i % 20) * 0.01, 50 + Math.floor(i / 20) * 0.01] as LonLat,
+      i,
+    }));
+    const groups = growGroups(pts, [6, 50], 10);
+    expect(groups.map((g) => g.length)).toEqual([10, 10, 10, 10]);
+    expect(groups[0]!.map((p) => p.i)).toContain(0);
+    // first group stays in the western quarter
+    expect(Math.max(...groups[0]!.map((p) => p.center[0]))).toBeLessThan(6.06);
   });
 
   it("orders tiers, merges tiny trailing groups, covers every street once", () => {
