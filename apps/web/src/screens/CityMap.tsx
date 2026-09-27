@@ -61,6 +61,8 @@ export function CityMap({
   /** Street selected in "complete" mode whose name is asked. */
   const [target, setTarget] = useState<string | null>(null);
   const wrongOnce = useRef(false);
+  /** Mirrors `target` synchronously (needed before React re-renders). */
+  const targetRef = useRef<string | null>(null);
   const [text, setText] = useState("");
   const [message, setMessage] = useState<Message>(null);
   const [overview, setOverview] = useState(false);
@@ -114,7 +116,7 @@ export function CityMap({
       }
       if (target) {
         const p = data.streetsById.get(target)!.properties;
-        const hinted = cityMap.hinted.includes(target);
+        const hinted = target in cityMap.hinted;
         m.push({
           key: `target-${target}-${hinted}`,
           at: p.center,
@@ -160,9 +162,11 @@ export function CityMap({
   };
 
   const selectTarget = (id: string | null) => {
+    targetRef.current = id;
     setTarget(id);
     wrongOnce.current = false;
-    if (id) inputRef.current?.focus();
+    // Focus right away, still inside the tap: iOS opens the keyboard only then.
+    if (id) inputRef.current?.focus({ preventScroll: true });
   };
 
   /** Checks the typed name against the selected street. */
@@ -365,7 +369,17 @@ export function CityMap({
                 placeholder={
                   target ? "Name der markierten Straße …" : "Erst eine graue Straße antippen"
                 }
-                disabled={!target}
+                // Stays enabled so a tap on a street can focus it synchronously (iOS only opens the
+                // keyboard for focus() inside the user gesture); without a street it refuses focus.
+                onFocus={() => {
+                  if (!targetRef.current) {
+                    inputRef.current?.blur();
+                    setMessage({
+                      tone: "info",
+                      text: "Tippe zuerst eine graue Straße auf der Karte an.",
+                    });
+                  }
+                }}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="words"

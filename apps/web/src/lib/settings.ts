@@ -7,6 +7,8 @@ export interface Settings {
   autocompleteMinChars: 0 | 2 | 3 | 4;
   /** Show aerial imagery instead of the drawn base map (online only). */
   aerial: boolean;
+  /** Last local change (epoch ms), for last-writer-wins sync. */
+  updatedAt: number;
 }
 
 export const settingsStore = createStore<Settings>("streetwise-settings-v1", {
@@ -14,10 +16,17 @@ export const settingsStore = createStore<Settings>("streetwise-settings-v1", {
   haptics: true,
   autocompleteMinChars: 3,
   aerial: false,
+  updatedAt: 0,
 });
 
 export const useSettings = () => useStore(settingsStore);
 
-export function updateSettings(patch: Partial<Settings>) {
-  settingsStore.set({ ...settingsStore.get(), ...patch });
+export function updateSettings(patch: Partial<Omit<Settings, "updatedAt">>) {
+  settingsStore.set({ ...settingsStore.get(), ...patch, updatedAt: Date.now() });
+}
+
+/** Applies settings from the server without marking them as a local change. */
+export function applyServerSettings(value: Partial<Settings>, updatedAt: number) {
+  if (updatedAt <= settingsStore.get().updatedAt) return;
+  settingsStore.set({ ...settingsStore.get(), ...value, updatedAt });
 }

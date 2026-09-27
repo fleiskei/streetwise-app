@@ -1,6 +1,6 @@
 # Streetwise – Umsetzungsplan
 
-Stand: 2026-09-27 · Status: **freigegeben, M0–M3 fertig, weiter mit M4** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
+Stand: 2026-09-27 · Status: **freigegeben, M0–M4 fertig** · Anforderungen: [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## 1. Architektur
 
@@ -85,29 +85,29 @@ Der JWT wird gegen `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` ge
 Die E-Mail aus dem Token bestimmt den Nutzer. Eigene Sessions und Login-Codes gibt es damit nicht.
 
 ### Datenmodell (D1)
+Siehe `apps/web/migrations/0001_init.sql`:
 ```sql
-users        (id TEXT PK, email TEXT UNIQUE, created_at, settings_json)
-answers      (id TEXT PK /*Client-UUID*/, user_id, city, street_id, mode,
-              correct INT, answered_at, response_ms)                      -- Ereignislog, idempotent
-progress     (user_id, city, street_id, box REAL, due_at, n_correct, n_wrong, last_at,
-              PRIMARY KEY (user_id, city, street_id))                      -- materialisierter Zustand
-level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
+users         (id TEXT PK, email TEXT UNIQUE, created_at)
+answers       (id TEXT PK /*Client-UUID*/, user_id, city, street_id, mode, correct, at)   -- Ereignislog, idempotent
+city_map      (user_id, city, street_id, found_at, hinted, hint_at, PK(user_id, city, street_id))
+city_map_meta (user_id, city, reset_at, PK(user_id, city))
+settings      (user_id PK, value JSON, updated_at)                                        -- last-writer-wins
 ```
+Der Lernstand wird nicht gespeichert, sondern bei jedem Sync aus `answers` berechnet (`replay`), auf dem Server und
+auf dem Gerät mit derselben Logik aus `packages/core`.
 
 ### API
 | Methode | Pfad | Zweck |
 |---|---|---|
 | GET | `/api/auth/login` | Navigationsziel zum Anmelden: Access erzwingt den Login, danach Redirect zurück zur App |
 | GET | `/cdn-cgi/access/logout` | Abmelden (stellt Access bereit) |
-| GET | `/api/me` | Nutzer + Einstellungen |
-| GET | `/api/progress?city=aachen&since=` | Fortschritt (Delta-Sync) |
-| POST | `/api/answers` | Batch von Antworten (idempotent über Client-UUID) → aktualisierter Fortschritt |
-| GET | `/api/stats?city=aachen` | Aggregationen für das Dashboard |
-| GET | `/api/export` · DELETE `/api/me` | Datenexport / Kontolöschung |
+| GET | `/api/me` | angemeldeter Nutzer |
+| POST | `/api/sync` | `{city, answers[], cityMap, settings}` → `{progress, cityMap, settings, accepted[]}` |
+| GET | `/api/export` · DELETE `/api/me` | Datenexport / Konto samt Serverdaten löschen |
 
 ### Sync-Strategie
-- Der Client rechnet SR und Level **optimistisch lokal** mit `packages/core` und legt die Antworten in eine IndexedDB-Queue.
-- Der Server nutzt **dieselbe** `core`-Logik. Er übernimmt die Antworten (nach `answered_at` sortiert), berechnet `progress` neu und schickt das Ergebnis zurück.
+- Der Client rechnet SR und Level **optimistisch lokal** mit `packages/core` und legt die Antworten in eine Warteschlange (localStorage, `pending`).
+- Der Server nutzt **dieselbe** `core`-Logik. Er übernimmt die Antworten (nach Zeitpunkt sortiert), berechnet `progress` neu und schickt das Ergebnis zurück.
   Der Server hat damit das letzte Wort, und bei mehreren Geräten ist das Ergebnis deterministisch.
 - Beim ersten Login werden die anonymen lokalen Antworten hochgeladen und übernommen.
 
@@ -150,7 +150,11 @@ level_state  (user_id, city, level_id, stars, unlocked_at, PRIMARY KEY (...))
 - ✅ M3: Antworten lokal gespeichert (Leitner), Levels schalten frei, Sterne inkl. ★★★; „Wiederholen“ über alle
   Levels (bis 15 fällige Straßen, schwache als Multiple Choice, sichere zum Antippen); Startseite mit
   „Wiederholen“ (Anzahl fällig) und „Weiterlernen“ (nächstes offenes Level im zuletzt gespielten Bezirk).
-- M4 vorbereitet: D1-Datenbank `streetwise` angelegt (id `a182a8ff-5498-43cb-bf40-b6c3810427a4`).
+- ✅ M4: Sync über `POST /api/sync` (Antworten als Log mit Client-UUIDs, Fortschritt = Replay; Stadtkarte per
+  `mergeCityMap`, Reset gewinnt geräteübergreifend; Einstellungen last-writer-wins). Upload wenige Sekunden nach
+  Änderungen, beim Start, bei Rückkehr online und beim Wechsel in den Hintergrund. Anonyme Nutzung bleibt möglich,
+  der lokale Stand wird beim ersten Login hochgeladen. Export (`GET /api/export`) und Kontolöschung (`DELETE /api/me`).
+  D1 `streetwise` (Migrationen in `apps/web/migrations`, angewendet im Deploy-Workflow).
 
 Nach M2 gibt es eine **spielbare Demo** ohne Login. Ich schlage vor, sie dort einmal auf dem iPhone zu testen,
 bevor Backend und Offline dazukommen.
