@@ -14,7 +14,7 @@
   "dependencies": {
     "@protomaps/basemaps": "^5.7.2",
     "@streetwise/core": "workspace:*",
-    "hono": "^4.13.9",
+    "hono": "^4.13.16",
     "jose": "^6.2.12",
     "maplibre-gl": "^6.11.2",
     "react": "^19.3.0",
